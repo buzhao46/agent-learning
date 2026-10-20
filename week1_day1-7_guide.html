@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Week 1 逐日操作清单 · Day 1–7</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#f5f7fa;--panel:#fff;--line:#e2e8f0;--txt:#1f2937;--txt2:#64748b;--txt3:#94a3b8;
+        --blue:#2563eb;--blue2:#eff6ff;--green:#15803d;--green2:#f0fdf4;--amber:#b45309;--amber2:#fffbeb;
+        --red:#b91c1c;--red2:#fef2f2;--code:#0f172a}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);padding:12px 22px 10px}
+  .toprow{max-width:1000px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  h1{font-size:16.5px;margin:0;font-weight:700;letter-spacing:-.2px}
+  .sub{font-size:12px;color:var(--txt2)}
+  .pwrap{flex:1;min-width:200px;display:flex;align-items:center;gap:10px}
+  .pbar{flex:1;height:8px;background:#eef2f7;border-radius:99px;overflow:hidden}
+  .pfill{height:100%;width:0;background:var(--blue);border-radius:99px;transition:width .35s}
+  .pnum{font-size:12px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .nav{max-width:1000px;margin:9px auto 0;display:flex;gap:6px;flex-wrap:wrap}
+  .nav a{font-size:12px;color:var(--txt2);text-decoration:none;border:1px solid var(--line);
+         border-radius:20px;padding:3px 11px;background:#fff;transition:.15s}
+  .nav a:hover{color:var(--blue);border-color:#bfdbfe;background:var(--blue2)}
+  main{max-width:1000px;margin:0 auto;padding:18px 22px 70px}
+  .banner{background:var(--blue2);border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px;
+          font-size:13px;color:#1e40af;margin-bottom:16px;line-height:1.75}
+  .banner b{color:#1e3a8a}
+
+  .day{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden}
+  .dhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:13px 18px;background:#f8fafc;
+         border-bottom:1px solid var(--line)}
+  .badge{background:var(--blue);color:#fff;font-size:12px;font-weight:700;border-radius:7px;padding:3px 9px;
+         letter-spacing:.3px;flex:none}
+  .dhead h2{font-size:15px;margin:0;font-weight:700}
+  .hrs{font-size:12px;color:var(--txt2);margin-left:auto;font-variant-numeric:tabular-nums}
+  .tag{font-size:11px;padding:1px 8px;border-radius:99px;font-weight:500;flex:none}
+  .t-fast{background:var(--green2);color:var(--green)}
+  .t-must{background:var(--blue2);color:var(--blue)}
+  .t-proj{background:var(--amber2);color:var(--amber)}
+  .t-rev{background:#f1f5f9;color:var(--txt2)}
+  .dbody{padding:16px 18px 18px}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .box{background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:10px 13px}
+  .box h4{margin:0 0 3px;font-size:12px;color:var(--txt3);font-weight:600;letter-spacing:.3px}
+  .box p{margin:0;font-size:13px}
+  .box code{background:#eef2f7;border-radius:4px;padding:1px 5px;font-size:12px;
+            font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .steps{margin:0 0 4px}
+  .step{display:flex;gap:11px;padding:9px 0;border-bottom:1px dashed #eef2f7}
+  .step:last-child{border-bottom:none}
+  .sn{flex:none;width:20px;height:20px;border-radius:50%;background:var(--blue2);color:var(--blue);
+      font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .sc{flex:1;min-width:0}
+  .sc .st{font-size:13.5px;font-weight:600;margin-bottom:2px}
+  .sc .sd{font-size:12.5px;color:var(--txt2);margin-bottom:6px}
+  .sc .sd code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px;
+               font-family:ui-monospace,Menlo,Consolas,monospace;color:#334155}
+
+  .codewrap{position:relative;margin:6px 0 2px}
+  pre.code{background:var(--code);color:#e2e8f0;border-radius:8px;padding:10px 12px;margin:0;
+           font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace;font-size:12.3px;line-height:1.62;
+           overflow-x:auto;white-space:pre}
+  pre.code .cm{color:#64748b}
+  .copy{position:absolute;top:6px;right:6px;background:rgba(255,255,255,.1);color:#cbd5e1;
+        border:1px solid rgba(255,255,255,.16);border-radius:6px;font-size:11px;padding:2px 8px;
+        cursor:pointer;font-family:inherit;transition:.15s;opacity:0}
+  .codewrap:hover .copy{opacity:1}
+  .copy:hover{background:rgba(255,255,255,.2);color:#fff}
+  .copy.ok{background:#15803d;color:#fff;border-color:#15803d}
+
+  .sect{margin-top:14px}
+  .sect h4{margin:0 0 6px;font-size:12.5px;color:var(--txt);display:flex;align-items:center;gap:6px}
+  .sect h4::before{content:"";width:3px;height:13px;background:var(--blue);border-radius:2px;display:inline-block}
+  ol.ex{margin:0;padding-left:20px;font-size:13px;color:#334155}
+  ol.ex li{margin-bottom:4px}
+  ol.ex code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px;
+             font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;padding:5px 0;cursor:pointer;color:#334155}
+  .ck input{margin:3px 0 0;width:15px;height:15px;accent-color:var(--blue);flex:none;cursor:pointer}
+  .ck.on{color:var(--txt3);text-decoration:line-through}
+
+  .pit{background:var(--red2);border:1px solid #fecaca;border-radius:10px;padding:10px 13px;margin-top:14px}
+  .pit h4{margin:0 0 5px;font-size:12.5px;color:var(--red)}
+  .pit ul{margin:0;padding-left:18px;font-size:12.8px;color:#7f1d1d}
+  .pit li{margin-bottom:3px}
+  .pit code{background:#fee2e2;border-radius:4px;padding:0 4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+
+  .links{margin-top:12px;display:flex;gap:7px;flex-wrap:wrap}
+  .links a{font-size:12px;text-decoration:none;color:var(--blue);background:var(--blue2);
+           border:1px solid #dbeafe;border-radius:7px;padding:3px 10px;transition:.15s}
+  .links a:hover{background:#dbeafe}
+
+  table{width:100%;border-collapse:collapse;font-size:12.8px;background:#fff;
+        border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px}
+  th,td{padding:7px 11px;text-align:left;border-bottom:1px solid #f1f5f9}
+  th{background:#f8fafc;font-weight:600;color:var(--txt2);font-size:12px}
+  tr:last-child td{border-bottom:none}
+  td code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .foot{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:6px}
+  .foot h3{margin:0 0 8px;font-size:14px}
+  .foot h3:not(:first-child){margin-top:18px}
+
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}.hrs{margin-left:0;width:100%}}
+  @media print{.top{position:static}.nav,.copy{display:none}body{background:#fff}
+    .day{break-inside:avoid;box-shadow:none}pre.code{background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="toprow">
+    <div>
+      <h1>Week 1 · 逐日操作清单</h1>
+      <div class="sub">Day 1–7 ｜ 约 12.5 小时 ｜ 代码已在本目录，全部实测可跑</div>
+    </div>
+    <div class="pwrap">
+      <div class="pbar"><div class="pfill" id="pfill"></div></div>
+      <div class="pnum" id="pnum">0 / 0</div>
+    </div>
+  </div>
+  <div class="nav">
+    <a href="#d1">Day 1 基础</a><a href="#d2">Day 2 异步</a><a href="#d3">Day 3 FastAPI</a>
+    <a href="#d4">Day 4 调模型</a><a href="#d5">Day 5 调参数</a><a href="#d6">Day 6 项目</a>
+    <a href="#d7">Day 7 复盘</a><a href="#ref">速查表</a>
+  </div>
+</div>
+
+<main>
+  <div class="banner">
+    <b>怎么用这份清单：</b>每天按「准备 → 动手 → 练习 → 验收」走，验收项打勾后会自动存在浏览器里，关掉再开还在。
+    <b>节奏已校正：</b>Day 1 和 Day 3 原来标的是「可提速」（按 Java 底子算的），现在改为 <b>必做、按满时长走</b>——Java 只是皮毛，这两天就是你 Agent 后端的地基，别压缩。
+    真正该省时间的是「读概念」，不该省的是「自己写一遍」。
+    <br><b>每天固定收尾 10 分钟：</b><code style="background:#dbeafe;padding:1px 5px;border-radius:4px">git commit</code> + 写 3 行笔记（今天学了什么 / 卡在哪 / 明天第一件事）。
+  </div>
+
+  <!-- ============================ Day 1 ============================ -->
+  <section class="day" id="d1">
+    <div class="dhead">
+      <span class="badge">Day 1</span>
+      <h2>Python 基础速通</h2>
+      <span class="tag t-must">必做 · 地基</span>
+      <span class="hrs">1.5–2h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>不是"从零学 Python"，但也不是"换套语法就完事"。编程基本功（变量、循环、函数、模块）你有了；<b>缺的是 Python 的表达方式 + 类型注解这套新东西</b>，按满时长认真走。</p></div>
+        <div class="box"><h4>产出</h4><p><code>out/day1_devices.json</code> + 一个能跑、能报错、能退出的脚本</p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">建虚拟环境并装依赖（10 分钟，只做一次）</div>
+            <div class="sd">venv 相当于 Java 的「per-project JDK + Maven 隔离」，不激活就会装到全局。</div>
+<div class="codewrap"><pre class="code">cd week1
+python -m venv .venv
+.venv\Scripts\activate          <span class="cm"># Windows（macOS/Linux: source .venv/bin/activate）</span>
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple</pre></div>
+            <div class="sd">激活成功的标志：命令行前面出现 <code>(.venv)</code>。</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">读 <code>day1_types.py</code>，重点看这 4 行注释里的映射</div>
+            <div class="sd">Java class → <code>@dataclass</code>；Optional&lt;T&gt; → <code>T | None</code>；checked exception → 自定义异常（Python 不强制 catch）。</div>
+<div class="codewrap"><pre class="code">@dataclass
+class Device:
+    name: str
+    ip: str
+    status: <span class="cm"># Literal["up","down"] 等价 Java enum</span>
+    tags: list[str] = field(default_factory=list)  <span class="cm"># 可变默认值必须这么写</span>
+
+    def is_healthy(self, cpu_limit: int = 80) -&gt; bool:
+        return self.status == "up" and self.cpu &lt; cpu_limit</pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">跑三条命令，故意触发一次错误</div>
+            <div class="sd">第三条是重点：看它<b>打印友好错误、退出码 2</b>，而不是甩一堆 traceback。</div>
+<div class="codewrap"><pre class="code">python day1_types.py
+python day1_types.py --device core-sw-01
+python day1_types.py --device not-exist
+echo $?        <span class="cm"># Windows: echo %ERRORLEVEL%  → 应为 2</span></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>练习（必须动键盘，别只看）</h4>
+        <ol class="ex">
+          <li>给 <code>Device</code> 加 <code>uptime: int = 0</code>，输出表增加一列「运行时长」。</li>
+          <li>写 <code>load_devices(path) -&gt; list[Device]</code>，把 json 读回对象（提示：<code>Device(**d)</code>）。</li>
+          <li>在 <code>main()</code> 里加 <code>time.perf_counter()</code> 计时，结束打印耗时。</li>
+        </ol>
+      </div>
+
+      <div class="sect">
+        <h4>验收</h4>
+        <label class="ck"><input type="checkbox" data-k="d1-1">三条命令都不报错，<code>not-exist</code> 退出码为 2</label>
+        <label class="ck"><input type="checkbox" data-k="d1-2">能说出 <code>field(default_factory=list)</code> 为什么必须这么写</label>
+        <label class="ck"><input type="checkbox" data-k="d1-3">三个练习至少做完两个</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li><code>tags: list[str] = []</code> 会让所有实例共享同一个 list，改成 <code>field(default_factory=list)</code>。</li>
+          <li>Windows 上 <code>python</code> 可能指向 Microsoft Store 的假 Python，用 <code>py -3</code> 或全路径。</li>
+          <li>没激活 venv 就 <code>pip install</code>，包装到全局，后面会找不到模块。</li>
+        </ul>
+      </div>
+
+      <div class="links">
+        <a href="https://docs.python.org/zh-cn/3/library/typing.html" target="_blank">类型注解</a>
+        <a href="https://docs.python.org/zh-cn/3/library/dataclasses.html" target="_blank">dataclasses</a>
+        <a href="https://docs.python.org/zh-cn/3/library/venv.html" target="_blank">venv 虚拟环境</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Day 2 ============================ -->
+  <section class="day" id="d2">
+    <div class="dhead">
+      <span class="badge">Day 2</span>
+      <h2>asyncio 异步编程</h2>
+      <span class="tag t-must">必做</span>
+      <span class="hrs">1.5h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>理解 <code>await</code> 在哪让出 CPU。巡检 100 台设备，串行 50s、并发 0.5s —— Agent 的并行工具调用全靠它。</p></div>
+        <div class="box"><h4>产出</h4><p>一份「串行 vs 并发」耗时对比（脚本自己打印）</p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">跑脚本，看 2.5x 提速</div>
+<div class="codewrap"><pre class="code">python day2_async.py
+<span class="cm"># 实测：串行 1.52s → 并发 0.61s，提速约 2.5x</span>
+python day2_async.py --real    <span class="cm"># 额外跑真实 HTTP 并发（需联网）</span></pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">读懂三个关键点</div>
+<div class="codewrap"><pre class="code"><span class="cm"># ① gather 的 return_exceptions=True：一台设备挂掉不拖垮整轮巡检</span>
+results = await asyncio.gather(*(fetch(d) for d in devices), return_exceptions=True)
+
+<span class="cm"># ② wait_for：到点强制取消，防止 Agent 卡死</span>
+await asyncio.wait_for(fetch(d), timeout=2.0)
+
+<span class="cm"># ③ Semaphore：限流，别把设备 SNMP 打爆</span>
+async with sem:  ...
+</pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">改一处、看一次结果</div>
+            <div class="sd">把 <code>DEVICES</code> 从 3 台加到 10 台，重跑：并发耗时应该<b>几乎不变</b>（只取决于最慢那个），串行会线性变长。这就是你要的直觉。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>练习</h4>
+        <ol class="ex">
+          <li>给 <code>fetch_health</code> 加 retry：失败重试 2 次，退避 <code>await asyncio.sleep(0.1 * 2 ** i)</code>。</li>
+          <li>把 <code>Semaphore(2)</code> 改成 4，观察耗时变化（0.63s → 0.3s 左右）。</li>
+          <li>用 <code>httpx.AsyncClient</code> 并发请求 3 个你司内网接口（或 httpbin）。</li>
+        </ol>
+      </div>
+
+      <div class="sect">
+        <h4>验收</h4>
+        <label class="ck"><input type="checkbox" data-k="d2-1">能解释「为什么 <code>time.sleep</code> 会卡死整个 Agent」</label>
+        <label class="ck"><input type="checkbox" data-k="d2-2">10 台设备并发耗时仍约 0.6s</label>
+        <label class="ck"><input type="checkbox" data-k="d2-3">retry 练习跑通</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li><code>async def</code> 函数<b>调用后不执行</b>，必须 <code>await</code> 或丢进 <code>gather</code>，否则静默无输出。</li>
+          <li><code>gather</code> 不加 <code>return_exceptions=True</code>，一台设备超时整轮巡检全挂。</li>
+          <li>协程里用 <code>requests</code>（同步库）会阻塞事件循环，异步必须用 <code>httpx</code>。</li>
+        </ul>
+      </div>
+
+      <div class="links">
+        <a href="https://docs.python.org/zh-cn/3/library/asyncio-task.html" target="_blank">asyncio 协程与任务</a>
+        <a href="https://www.python-httpx.org/async/" target="_blank">httpx 异步</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Day 3 ============================ -->
+  <section class="day" id="d3">
+    <div class="dhead">
+      <span class="badge">Day 3</span>
+      <h2>FastAPI 入门</h2>
+      <span class="tag t-must">必做 · 后端地基</span>
+      <span class="hrs">1.5–2h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>别被"Java 后端"吓住——你在 GoAhead 里做过 HTTP 服务端，路由、请求响应、返回码这些<b>直觉你本来就有</b>。这一天只是换个写法（FastAPI），不是从零学后端。</p></div>
+        <div class="box"><h4>产出</h4><p><code>/health</code> + <code>/echo</code> 可用，Swagger 能打开</p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">启动服务，打开自动生成的 Swagger</div>
+<div class="codewrap"><pre class="code">python day3_fastapi.py
+<span class="cm"># 浏览器：http://127.0.0.1:8000/docs  （这个是白送的，不用手写接口文档）</span></pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">另开一个终端，用 curl 验收 4 种情况</div>
+<div class="codewrap"><pre class="code">curl http://127.0.0.1:8000/health
+curl -X POST http://127.0.0.1:8000/echo -H "Content-Type: application/json" \
+     -d "{\"message\":\"hello\",\"upper\":true}"
+curl -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8000/devices/nope      <span class="cm"># 404</span>
+curl -o /dev/null -w "%{http_code}\n" -X POST http://127.0.0.1:8000/echo \
+     -H "Content-Type: application/json" -d "{\"message\":\"\"}"              <span class="cm"># 422</span></pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">看懂依赖注入这段（Agent 后端最常用的模式）</div>
+<div class="codewrap"><pre class="code">@lru_cache                      <span class="cm"># 单例，等价 Spring 的 Bean</span>
+def get_settings() -&gt; Settings: ...
+
+def require_token(x_token: str | None = Header(None),
+                  settings: Settings = Depends(get_settings)) -&gt; None:
+    if settings.api_token and x_token != settings.api_token:
+        raise HTTPException(401, "X-Token 无效")</pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>练习</h4>
+        <ol class="ex">
+          <li>加 <code>POST /devices</code>：收 <code>DeviceOut</code>，写进 <code>DEVICES</code>，返回 201。</li>
+          <li>给 <code>/devices</code> 加查询参数 <code>status: str | None = None</code>，支持 <code>?status=down</code>。</li>
+          <li>把 <code>Settings.api_token</code> 设为 <code>"abc"</code>，体会 401，再带 <code>-H "X-Token: abc"</code> 通过。</li>
+        </ol>
+      </div>
+
+      <div class="sect">
+        <h4>验收</h4>
+        <label class="ck"><input type="checkbox" data-k="d3-1"><code>/docs</code> 能打开并调用接口</label>
+        <label class="ck"><input type="checkbox" data-k="d3-2">能讲清 404（资源不存在）和 422（参数不合法）的区别</label>
+        <label class="ck"><input type="checkbox" data-k="d3-3">POST 新增设备练习跑通</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li>端口占用：<code>netstat -ano | findstr :8000</code> 找 PID，<code>taskkill /PID xxx /F</code>。</li>
+          <li>Pydantic v2 用 <code>model_dump()</code>，旧的 <code>.dict()</code> 已废弃。</li>
+          <li>别在脚本里写 <code>reload=True</code>，Windows 上容易反复重启；开发期用 <code>uvicorn day3_fastapi:app --reload</code>。</li>
+        </ul>
+      </div>
+
+      <div class="links">
+        <a href="https://fastapi.tiangolo.com/zh/tutorial/" target="_blank">FastAPI 中文教程</a>
+        <a href="https://docs.pydantic.dev/latest/concepts/models/" target="_blank">Pydantic 模型</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Day 4 ============================ -->
+  <section class="day" id="d4">
+    <div class="dhead">
+      <span class="badge">Day 4</span>
+      <h2>调用大模型 API</h2>
+      <span class="tag t-must">必做</span>
+      <span class="hrs">1.5h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>搞懂 <code>messages</code> 结构、参数、流式。这是 Agent 的「大脑接口」，后面所有东西都架在它上面。</p></div>
+        <div class="box"><h4>产出</h4><p>命令行成功调通 DeepSeek / Qwen 任一模型</p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">先解决 Key（三选一，都有免费额度或极低门槛）</div>
+            <div class="sd">DeepSeek 最省事（充 10 元够学一个月）；硅基流动有免费额度；阿里百炼企业常用。任选一个，都走 OpenAI 兼容协议，代码不用改。</div>
+<div class="codewrap"><pre class="code">cp .env.example .env      <span class="cm"># Windows: copy .env.example .env</span>
+<span class="cm"># 编辑 .env，三行：LLM_API_KEY / LLM_BASE_URL / LLM_MODEL</span>
+python llm_client.py      <span class="cm"># 自检：打印「真实模式」或「mock 模式」</span></pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">单轮调用 + 看清实际发出去的 JSON</div>
+<div class="codewrap"><pre class="code">python day4_llm_call.py --once "解释一下 SNMP 的 OID" --show-payload</pre></div>
+            <div class="sd">你会看到 <code>system</code> 在最前，<code>user</code> 在后。模型<b>没有记忆</b>，历史全靠你每次带上。</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">多轮对话，亲手验证「没有记忆」这件事</div>
+<div class="codewrap"><pre class="code">python day4_llm_call.py --stream
+你 &gt; 我叫巨人，记住
+AI &gt; ...
+你 &gt; 我叫什么？
+<span class="cm"># 答对 = history 回填正确；答错 = 你漏了 assistant 那条消息</span></pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>练习</h4>
+        <ol class="ex">
+          <li>把 <code>SYSTEM_PROMPT</code> 改成「只输出 JSON，不要任何解释」，连问 3 次看格式稳定性。</li>
+          <li>打印 <code>resp.usage</code>，看一次调用吃了多少 token（心里有成本概念）。</li>
+          <li>把 <code>--stream</code> 关掉再开，感受首字延迟差别。</li>
+        </ol>
+      </div>
+
+      <div class="sect">
+        <h4>验收</h4>
+        <label class="ck"><input type="checkbox" data-k="d4-1"><code>python llm_client.py</code> 显示「真实模式」</label>
+        <label class="ck"><input type="checkbox" data-k="d4-2">能默画出一次请求的 messages JSON（system + user）</label>
+        <label class="ck"><input type="checkbox" data-k="d4-3">多轮里模型能答出「你叫巨人」</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li><code>base_url</code> 必须带 <code>/v1</code>，DeepSeek 是 <code>https://api.deepseek.com/v1</code>，漏了直接 404。</li>
+          <li><code>max_tokens</code> 单位是 token 不是汉字，1 汉字 ≈ 1~1.5 token。</li>
+          <li>Key 写进代码再 push，会被扫号盗刷。<code>.env</code> 必须在 <code>.gitignore</code> 里。</li>
+          <li>401 多半是没读到 <code>.env</code>（工作目录不对），不是 Key 错。</li>
+        </ul>
+      </div>
+
+      <div class="links">
+        <a href="https://api-docs.deepseek.com/zh-cn/" target="_blank">DeepSeek API</a>
+        <a href="https://docs.siliconflow.cn/cn/api-reference/chat-completions/chat-completions" target="_blank">硅基流动 API</a>
+        <a href="https://pypi.org/project/openai/" target="_blank">openai-python</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Day 5 ============================ -->
+  <section class="day" id="d5">
+    <div class="dhead">
+      <span class="badge">Day 5</span>
+      <h2>模型参数调优</h2>
+      <span class="tag t-must">必做</span>
+      <span class="hrs">1.5h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>用<b>实验数据</b>回答一个问题：Agent 做决策时 temperature 该填多少。这个结论自己跑出来，比看十篇博客记得牢。</p></div>
+        <div class="box"><h4>产出</h4><p><code>out/day5_param_lab.md</code>，含你自己写的 4 条结论</p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">跑实验矩阵（2 个 system × 3 个温度 × 2 个 max_tokens = 12 次调用）</div>
+<div class="codewrap"><pre class="code">python day5_param_lab.py
+python day5_param_lab.py --quick    <span class="cm"># 只跑温度对比，省 token</span>
+<span class="cm"># 真实模式成本约几分钱，放心跑</span></pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">只盯这三件事看结果</div>
+            <div class="sd">① <code>temperature=0</code> 跑两次是否几乎一样（可复现性）→ ② <code>max_tokens=40</code> 是否被硬截断（截断 = JSON 解析失败）→ ③ 加了 system 约束后格式是否稳定。</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">打开报告，把那 4 行结论填掉（别抄，写你自己的观察）</div>
+<div class="codewrap"><pre class="code">## 我的结论（自己填，别抄）
+- temperature=0 时多次运行是否一致：
+- max_tokens 太小会怎样（是否被截断）：
+- 加 system 约束后输出格式变化：
+- 以后 Agent 决策我会用 temperature=____，写报告用 ____</pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>练习</h4>
+        <ol class="ex">
+          <li>加 <code>top_p</code> 维度（0.5 / 1.0），看它和 temperature 是否叠加影响。</li>
+          <li><code>temperature=0</code> 连跑两次，逐字比较是否相同。</li>
+          <li>把 <code>max_tokens</code> 设成 20，检查 <code>finish_reason</code> 是不是 <code>length</code>。</li>
+        </ol>
+      </div>
+
+      <div class="sect">
+        <h4>验收</h4>
+        <label class="ck"><input type="checkbox" data-k="d5-1">报告生成，4 条结论是自己写的</label>
+        <label class="ck"><input type="checkbox" data-k="d5-2">能说出「Agent 工具决策为什么用低温度」</label>
+        <label class="ck"><input type="checkbox" data-k="d5-3">见过一次 <code>finish_reason=length</code> 的截断</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li>同时大改 temperature 和 top_p，分不清是谁的影响——一次只动一个变量。</li>
+          <li>输出被截断 → JSON 解析失败，这是 Agent 线上报错的高频原因，<code>max_tokens</code> 要留余量。</li>
+        </ul>
+      </div>
+
+      <div class="links">
+        <a href="https://www.promptingguide.ai/zh" target="_blank">Prompt 工程指南（中文）</a>
+        <a href="https://api-docs.deepseek.com/zh-cn/" target="_blank">DeepSeek 参数说明</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Day 6 ============================ -->
+  <section class="day" id="d6">
+    <div class="dhead">
+      <span class="badge">Day 6</span>
+      <h2>项目：LLM 版 Agent</h2>
+      <span class="tag t-proj">项目日</span>
+      <span class="hrs">3.5h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>把 <code>minimal_agent.py</code> 的规则决策换成<b>真实模型 Function Calling</b>。这一天过完，你就有第一个能写进简历的 Agent。</p></div>
+        <div class="box"><h4>产出</h4><p>可运行的 LLM 版 Agent + <code>out/day6_trace.json</code></p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">先看懂结构，别看代码量（只有四块）</div>
+            <div class="sd">① <code>TOOLS</code> 给模型看的能力清单 → ② <code>TOOL_IMPL</code> 真正干活的函数 → ③ <code>execute_tool</code> 统一入口（异常转 <code>{"error":...}</code>） → ④ <code>run_agent</code> 那个 while 循环。</div>
+<div class="codewrap"><pre class="code">TOOLS = [{
+  "type": "function",
+  "function": {
+    "name": "get_device_health",
+    "description": "查询单台设备的存活状态与 CPU/内存利用率。",   <span class="cm"># 写得越清楚，选错概率越低</span>
+    "parameters": {"type": "object",
+      "properties": {"device": {"type": "string", "description": "如 core-sw-01"}},
+      "required": ["device"]}
+  }
+}]</pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">无 Key 先跑规则模式，把 7 步轨迹看懂</div>
+<div class="codewrap"><pre class="code">python day6_agent_llm.py
+<span class="cm"># 实测：7 步 / 6 次工具调用，输出 4 条分级诊断
+#   [P0] agg-sw-03 离线 → 先查电源/链路/community
+#   [P1] core-sw-01 CPU 92% → 查环路/广播风暴
+#   [P1] core-sw-01 GE0/0/2 入向错误包 1543 → 疑光衰/误码
+#   [P1] core-rtr-02 Gi0/2 down → 查光模块与对端</span></pre></div>
+            <div class="sd">注意 STEP 2–4：它先把 3 台设备的健康状态查完，才发现 agg-sw-03 离线，于是<b>跳过</b>了它的接口采集。这个「看结果决定下一步」就是 Agent 和脚本的本质区别。</div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">配上 Key，切真实模型决策，对比两者的差别</div>
+<div class="codewrap"><pre class="code">python day6_agent_llm.py
+python day6_agent_llm.py --task "只诊断 core-sw-01 这台设备"
+python day6_agent_llm.py --max-steps 3    <span class="cm"># 验证护栏：到 3 步强制停，防烧钱</span></pre></div>
+            <div class="sd">真实模式下，<b>调哪个工具、传什么参数是模型自己定的</b>，你只提供 schema 和循环。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>改造练习（这三条才是简历素材）</h4>
+        <ol class="ex">
+          <li><b>加高危工具 + 人工确认</b>：写 <code>reboot_port(device, interface)</code>，执行前 <code>input("确认重启？(y/N)")</code>，非 y 返回 <code>{"error":"用户拒绝执行"}</code>。→ 这就是 human-in-the-loop。</li>
+          <li><b>换真实 SNMP</b>：把 <code>tool_get_device_health</code> 函数体换成 pysnmp <code>getCmd</code>（参考 <code>snmp-agent-demo/snmp_client.py</code>），schema 一行不用改。</li>
+          <li><b>并行化</b>：现在「逐台查健康」是串行的，用 Day 2 的 <code>gather</code> 改成并发。</li>
+        </ol>
+      </div>
+
+      <div class="sect">
+        <h4>验收（面试官会问的就是这三条）</h4>
+        <label class="ck"><input type="checkbox" data-k="d6-1">能回答：模型怎么知道你有哪些工具？（答：tools schema 每次随请求发送）</label>
+        <label class="ck"><input type="checkbox" data-k="d6-2">能回答：工具结果怎么回到模型手里？（答：role=tool + tool_call_id 追加进 messages）</label>
+        <label class="ck"><input type="checkbox" data-k="d6-3">能回答：为什么工具异常要转成 <code>{"error":...}</code> 而不是抛出去？（答：让模型看到错误才能自我修正）</label>
+        <label class="ck"><input type="checkbox" data-k="d6-4">改造练习 1 或 2 至少做完一个</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li>回填 assistant 消息时没带 <code>tool_calls</code>，下一轮直接 400。</li>
+          <li><code>arguments</code> 是<b>字符串</b>，要 <code>json.loads</code>；模型偶尔给非法 JSON，要兜住。</li>
+          <li>每条 <code>role: tool</code> 消息必须有 <code>tool_call_id</code>，且和上一条一一对应。</li>
+          <li>没有最大步数护栏，模型会反复调同一个工具，账单很难看。</li>
+        </ul>
+      </div>
+
+      <div class="links">
+        <a href="https://api-docs.deepseek.com/zh-cn/guides/function_calling" target="_blank">Function Calling 文档</a>
+        <a href="https://www.promptingguide.ai/zh/techniques/react" target="_blank">ReAct 模式说明</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ Day 7 ============================ -->
+  <section class="day" id="d7">
+    <div class="dhead">
+      <span class="badge">Day 7</span>
+      <h2>周复盘 + 上 GitHub</h2>
+      <span class="tag t-rev">复盘</span>
+      <span class="hrs">1.5h</span>
+    </div>
+    <div class="dbody">
+      <div class="grid2">
+        <div class="box"><h4>今天要拿到什么</h4><p>把一周的产出变成<b>别人能看到的仓库</b>。找工作时，一个能跑的仓库比「我学过」有说服力得多。</p></div>
+        <div class="box"><h4>产出</h4><p>GitHub 仓库 + 一篇周记（<code>week1/NOTES.md</code>）</p></div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <span class="sn">1</span>
+          <div class="sc">
+            <div class="st">先建 .gitignore（顺序别反，否则 Key 就进历史了）</div>
+<div class="codewrap"><pre class="code">.venv/
+.env
+out/
+__pycache__/</pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">2</span>
+          <div class="sc">
+            <div class="st">初始化并推送</div>
+<div class="codewrap"><pre class="code">git init
+git add .
+git commit -m "feat(week1): day1-6 python/async/fastapi/llm/param-lab/agent"
+git branch -M main
+git remote add origin https://github.com/&lt;你的用户名&gt;/ai-agent-roadmap.git
+git push -u origin main</pre></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="sn">3</span>
+          <div class="sc">
+            <div class="st">写周记（模板照抄，重点是最后两行）</div>
+<div class="codewrap"><pre class="code">## Week 1 复盘（YYYY-MM-DD）
+- 本周最大的认知变化：
+- 卡最久的一个问题 &amp; 怎么解决的：
+- 代码产出：day1~day6 六个脚本，全部可跑
+- 数据结论：串行 1.52s vs 并发 0.61s；temperature=0 相对稳定
+- 还没搞懂的：          <span class="cm"># 这条最重要，它会决定你下周第一天做什么</span>
+- 下周第一件事：</pre></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sect">
+        <h4>验收</h4>
+        <label class="ck"><input type="checkbox" data-k="d7-1">GitHub 仓库能打开，README 写了怎么跑</label>
+        <label class="ck"><input type="checkbox" data-k="d7-2">去仓库里点开确认一次：<b>没有 .env</b></label>
+        <label class="ck"><input type="checkbox" data-k="d7-3">六个脚本在本机全部跑通</label>
+        <label class="ck"><input type="checkbox" data-k="d7-4">周记写完，且写了「还没搞懂的」</label>
+      </div>
+
+      <div class="pit">
+        <h4>会踩的坑</h4>
+        <ul>
+          <li>先 <code>git add</code> 再补 <code>.gitignore</code>，<code>.env</code> 已经进了暂存区，要用 <code>git rm --cached .env</code>。</li>
+          <li>没有 GitHub 就用 Gitee，国内推得快；简历里放链接一样有效。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ 速查 ============================ -->
+  <div class="foot" id="ref">
+    <h3>命令速查</h3>
+    <table>
+      <tr><th style="width:34%">场景</th><th>命令</th></tr>
+      <tr><td>激活环境</td><td><code>.venv\Scripts\activate</code></td></tr>
+      <tr><td>装包加速（清华源）</td><td><code>pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple</code></td></tr>
+      <tr><td>检查 Key 是否生效</td><td><code>python llm_client.py</code></td></tr>
+      <tr><td>看端口占用</td><td><code>netstat -ano | findstr :8000</code></td></tr>
+      <tr><td>杀进程</td><td><code>taskkill /PID 12345 /F</code></td></tr>
+      <tr><td>装 pysnmp（Week 2 用）</td><td><code>pip install pysnmp==6.1.4</code></td></tr>
+      <tr><td>终端中文乱码</td><td><code>set PYTHONUTF8=1</code> 或 <code>chcp 65001</code></td></tr>
+    </table>
+
+    <h3>常见报错对照</h3>
+    <table>
+      <tr><th style="width:34%">报错</th><th style="width:28%">原因</th><th>解法</th></tr>
+      <tr><td><code>ModuleNotFoundError: openai</code></td><td>没装 / 没激活 venv</td><td>激活后 <code>pip install -r requirements.txt</code></td></tr>
+      <tr><td><code>AuthenticationError 401</code></td><td>Key 错，或没读到 .env</td><td>跑 <code>llm_client.py</code> 看是否 mock 模式</td></tr>
+      <tr><td><code>NotFoundError 404</code></td><td>base_url 漏了 /v1</td><td>补成 <code>https://api.deepseek.com/v1</code></td></tr>
+      <tr><td><code>BadRequestError 400 tool_calls</code></td><td>没回填 assistant 的 tool_calls</td><td>按 Day 6 坑列表逐条检查</td></tr>
+      <tr><td>输出突然断掉</td><td>max_tokens 太小</td><td>调大；<code>finish_reason</code> 显示 length 即坐实</td></tr>
+    </table>
+
+    <h3>这一周结束你应该有的东西</h3>
+    <p style="font-size:13px;color:#334155;margin:6px 0 0">
+      六个能跑的脚本 · 一份参数实验报告 · 一个 LLM 驱动的 Agent · 一篇写了「还没搞懂的什么」的周记 · 一个公开的 GitHub 仓库。
+      下周一（Day 8）开始进 RAG，那时你会发现前面这些是必经的地基。
+    </p>
+  </div>
+</main>
+
+<script>
+(function () {
+  // ---- 给所有代码块加「复制」按钮
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var wrap = pre.parentElement;
+    if (!wrap || !wrap.classList.contains('codewrap')) return;
+    var btn = document.createElement('button');
+    btn.className = 'copy';
+    btn.textContent = '复制';
+    btn.addEventListener('click', function () {
+      var text = pre.innerText;
+      var done = function () {
+        btn.textContent = '已复制';
+        btn.classList.add('ok');
+        setTimeout(function () { btn.textContent = '复制'; btn.classList.remove('ok'); }, 1400);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+      } else { fallback(text, done); }
+    });
+    wrap.appendChild(btn);
+  });
+
+  function fallback(text, done) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  // ---- 勾选状态持久化
+  var KEY = 'week1-checklist-v1';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('.ck input[type=checkbox]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+
+  function refresh() {
+    var done = 0;
+    boxes.forEach(function (b) {
+      if (b.checked) { done++; }
+      b.closest('.ck').classList.toggle('on', b.checked);
+    });
+    var pct = boxes.length ? Math.round(done / boxes.length * 100) : 0;
+    document.getElementById('pfill').style.width = pct + '%';
+    document.getElementById('pnum').textContent = done + ' / ' + boxes.length + ' 项已验收';
+  }
+
+  boxes.forEach(function (b) {
+    var k = b.dataset.k;
+    if (saved[k]) b.checked = true;
+    b.addEventListener('change', function () {
+      saved[k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      refresh();
+    });
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>

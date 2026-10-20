@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 工具缓存
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# 运行输出（可重建）
+out/
+*.log
+
+# 密钥与环境变量 —— 千万别提交
+.env
+.env.*
+!.env.example
+
+# 编辑器/系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# WorkBuddy 本地数据
+.workbuddy/
+
+# 工具/IDE 本地计划文件
+.codebuddy/

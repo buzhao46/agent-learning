@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>21 天 Python 手感训练 · 不靠课程，靠每天 30 行</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#f5f7fa;--panel:#fff;--line:#e2e8f0;--txt:#1f2937;--txt2:#64748b;--txt3:#94a3b8;
+        --blue:#2563eb;--blue2:#eff6ff;--green:#15803d;--green2:#f0fdf4;--amber:#b45309;--amber2:#fffbeb;
+        --red:#b91c1c;--red2:#fef2f2;--purple:#6d28d9;--purple2:#f5f3ff;--code:#0f172a}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);padding:12px 22px 10px}
+  .toprow{max-width:1040px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  h1{font-size:16.5px;margin:0;font-weight:700;letter-spacing:-.2px}
+  .sub{font-size:12px;color:var(--txt2)}
+  .pwrap{flex:1;min-width:200px;display:flex;align-items:center;gap:10px}
+  .pbar{flex:1;height:8px;background:#eef2f7;border-radius:99px;overflow:hidden}
+  .pfill{height:100%;width:0;background:var(--blue);border-radius:99px;transition:width .35s}
+  .pnum{font-size:12px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  main{max-width:1040px;margin:0 auto;padding:18px 22px 70px}
+
+  .lead{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:15px}
+  .lead h2{font-size:15px;margin:0 0 8px}
+  .lead p{margin:0 0 8px;font-size:13.3px}
+  .lead p:last-child{margin-bottom:0}
+  .lead b{color:#1e3a8a}
+
+  .sym{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0 0}
+  .sym div{background:#fafbfc;border:1px solid var(--line);border-left:3px solid var(--red);
+           border-radius:8px;padding:8px 11px;font-size:12.8px}
+  .sym div b{color:var(--red)}
+
+  .method{background:var(--purple2);border:1px solid #ddd6fe;border-radius:14px;padding:15px 18px;margin-bottom:15px}
+  .method h2{font-size:15px;margin:0 0 4px;color:#4c1d95}
+  .method .msub{font-size:12.5px;color:#6d28d9;margin:0 0 10px}
+  .mstep{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed #ddd6fe}
+  .mstep:last-child{border-bottom:none}
+  .mn{flex:none;width:22px;height:22px;border-radius:50%;background:#6d28d9;color:#fff;font-size:11.5px;
+      font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .mc{flex:1;font-size:13px}
+  .mc b{color:#4c1d95}
+  .mc code{background:#ede9fe;border-radius:4px;padding:0 4px;font-size:11.5px;
+           font-family:ui-monospace,Menlo,Consolas,monospace;color:#5b21b6}
+
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);
+        border-radius:12px;overflow:hidden;font-size:12.8px;margin-bottom:15px}
+  th{background:#f8fafc;font-weight:600;color:var(--txt2);font-size:12px;padding:9px 10px;text-align:left;
+     border-bottom:1px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fafbfc}
+  .wk td{background:#f1f5f9;font-weight:700;font-size:12.5px;color:#334155;padding:7px 10px}
+  .ckc{width:34px;text-align:center}
+  .ckc input{width:15px;height:15px;accent-color:var(--blue);cursor:pointer}
+  .dn{width:44px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .task{min-width:210px}
+  .task b{display:block;font-size:13px;font-weight:600;margin-bottom:2px}
+  .task span{color:var(--txt2);font-size:12.2px}
+  .kch{display:inline-block;background:var(--green2);color:var(--green);border-radius:5px;padding:1px 6px;
+       font-size:11px;margin:1px 3px 1px 0;white-space:nowrap}
+  .ln{white-space:nowrap;color:var(--txt3);font-variant-numeric:tabular-nums;font-size:12px}
+  .acc{color:#475569;font-size:12.2px;min-width:190px}
+  .acc code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.3px;
+            font-family:ui-monospace,Menlo,Consolas,monospace}
+  tr.done{opacity:.5}
+  tr.done .task b{text-decoration:line-through}
+
+  .goal{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:15px}
+  .goal h2{font-size:15px;margin:0 0 8px}
+  .goal ul{margin:0;padding-left:18px;font-size:13px}
+  .goal li{margin-bottom:5px}
+  .goal code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px;
+             font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .warn{background:var(--red2);border:1px solid #fecaca;border-radius:14px;padding:15px 18px;margin-bottom:15px}
+  .warn h2{font-size:15px;margin:0 0 7px;color:var(--red)}
+  .warn ul{margin:0;padding-left:18px;font-size:13px;color:#7f1d1d}
+  .warn li{margin-bottom:5px}
+  .warn code{background:#fee2e2;border-radius:4px;padding:0 4px;font-size:11.5px;
+             font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  .have{background:var(--blue2);border:1px solid #bfdbfe;border-radius:14px;padding:15px 18px;margin-bottom:15px}
+  .have h2{font-size:15px;margin:0 0 8px;color:#1e40af}
+  .have ul{margin:0;padding-left:18px;font-size:13px;color:#1e3a8a}
+  .have li{margin-bottom:5px}
+  .have code{background:#dbeafe;border-radius:4px;padding:0 4px;font-size:11.5px;
+             font-family:ui-monospace,Menlo,Consolas,monospace}
+
+  pre{background:var(--code);color:#e2e8f0;border-radius:9px;padding:11px 13px;margin:8px 0 0;
+      font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace;font-size:12.3px;line-height:1.6;overflow-x:auto}
+  pre .cm{color:#64748b}
+
+  .foot{text-align:center;font-size:12.5px;color:var(--txt3);line-height:1.9}
+  @media(max-width:760px){.sym{grid-template-columns:1fr}.kch{font-size:10.5px}}
+  @media print{.top{position:static}body{background:#fff}tbody tr{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="toprow">
+    <div>
+      <h1>21 天 Python 手感训练</h1>
+      <div class="sub">不靠课程，靠每天 30–50 行真实代码 ｜ 全部围绕你的 SNMP / 网络运维场景 ｜ 合计约 800 行</div>
+    </div>
+    <div class="pwrap">
+      <div class="pbar"><div class="pfill" id="pfill"></div></div>
+      <div class="pnum" id="pnum">0 / 21</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <div class="lead">
+    <h2>先把症状说准，才知道补什么</h2>
+    <p>「Python 会基础、不常写脚本」不是语法问题——你缺的不是 <code style="background:#f1f5f9;padding:0 3px;border-radius:3px">for</code> 和 <code style="background:#f1f5f9;padding:0 3px;border-radius:3px">if</code>。真正的卡点通常是这五个，你可以对号入座：</p>
+    <div class="sym">
+      <div><b>① 每次从空白文件开始</b><br>连读个 json、配个日志都要现搜，搜一次 10 分钟，一天搜 5 次，正反馈就断了。</div>
+      <div><b>② 一个文件写到 300 行</b><br>不知道什么时候该拆模块，拆了又不知道怎么 import 回来。</div>
+      <div><b>③ 报错看不懂</b><br>只会 print 大法，traceback 一屏红字就慌，说不清是自己的错还是库的错。</div>
+      <div><b>④ 只能写「能跑」的代码</b><br>不会写「出错也能说清哪里错」的代码——而 Agent 项目全靠这个。</div>
+      <div><b>⑤ 完整项目没做过</b><br>写过 30 行的练习，没写过 300 行、有参数有日志有测试有 README 的东西。</div>
+      <div style="border-left-color:#15803d"><b style="color:#15803d">好消息</b><br>这五条全部是「写得少」，不是「学不会」。它们的解法只有一个：<b>连续写 21 天</b>。</div>
+    </div>
+    <p style="margin-top:10px"><b>所以别再去刷教程了。</b>再看 20 小时视频，第 22 天你还是会从空白文件开始。这条路线是<b>「项目驱动」</b>：每天在已有代码上加一个真实功能，21 天后你手上有一个能讲 20 分钟的完整项目。</p>
+  </div>
+
+  <div class="method">
+    <h2>核心方法：抄 → 改 → 写（三步，缺一不可）</h2>
+    <p class="msub">这是从「看得懂」到「写得出」唯一有效的路径，每天每个任务都按这个走</p>
+    <div class="mstep"><span class="mn">1</span><div class="mc"><b>抄</b>：把当天的参考代码<b>手敲一遍</b>（不要复制粘贴）。手敲是为了让手指记住 <code>import json</code>、<code>Path(...).read_text()</code> 这些高频动作。</div></div>
+    <div class="mstep"><span class="mn">2</span><div class="mc"><b>改</b>：改一个参数、加一个分支、换一个字段。<b>这一步最关键</b>——你会在改动中撞上报错，撞一次比看十遍文档记得牢。</div></div>
+    <div class="mstep"><span class="mn">3</span><div class="mc"><b>写</b>：<b>关掉参考</b>，从空白文件重写一遍，允许查语法但禁止抄结构。写不出来就回到第 2 步，再改一次。</div></div>
+    <div class="mstep"><span class="mn">4</span><div class="mc"><b>存</b>：把这次学到的片段追加进 <code>snippets.py</code>（我已经给你建好了，10 个常用片段都在里面）。<b>21 天后这就是你自己的工具箱</b>，也是你「不常写」变「常写」的物理保障。</div></div>
+  </div>
+
+  <div class="goal">
+    <h2>每天的固定节奏（30–50 分钟，别贪多）</h2>
+    <ul>
+      <li><b>0–5 分钟</b>：回读自己昨天写的代码，只干一件事——找出<b>一处你想改的地方</b>。</li>
+      <li><b>5–35 分钟</b>：做当天的任务，按「抄 → 改 → 写」走一遍。</li>
+      <li><b>35–45 分钟</b>：跑验收命令，绿了才算完成；红了就<b>先读 traceback 最后一行</b>。</li>
+      <li><b>45–50 分钟</b>：<code>git commit -m "day N: ..."</code>，然后把新学的片段存进 <code>snippets.py</code>。</li>
+    </ul>
+    <p style="font-size:12.8px;color:#64748b;margin:8px 0 0">断了一天怎么办？<b>不要补，直接接上</b>。连续性的价值远大于完整性。</p>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th class="ckc"></th><th class="dn">Day</th><th class="task">任务（做完就是在现有代码上加功能）</th>
+        <th style="width:150px">新学到的东西</th><th class="ln" style="width:56px">代码量</th><th class="acc">验收（一行命令 / 一句话）</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="wk"><td colspan="6">第 1 周 · 拆与改 —— 从「读别人的代码」到「改出自己的」</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p1"></td><td class="dn">D1</td>
+        <td class="task"><b>数据外置</b><span>把 <code>day1_types.py</code> 里的 SEED 挪进 <code>devices.json</code>，启动时读文件</span></td>
+        <td><span class="kch">pathlib</span><span class="kch">json</span></td><td class="ln">~30 行</td>
+        <td class="acc">删掉 SEED 后仍能跑出同样结果</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p2"></td><td class="dn">D2</td>
+        <td class="task"><b>换掉 print</b><span>改用 <code>setup_logger()</code>，分 INFO/WARNING/ERROR，同时写 <code>out/run.log</code></span></td>
+        <td><span class="kch">logging</span></td><td class="ln">~20 行</td>
+        <td class="acc">日志文件里能看到 3 个级别</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p3"></td><td class="dn">D3</td>
+        <td class="task"><b>加参数</b><span>用 argparse 加 <code>--device</code> / <code>--limit</code> / <code>--verbose</code> 三个参数</span></td>
+        <td><span class="kch">argparse</span></td><td class="ln">~25 行</td>
+        <td class="acc"><code>--help</code> 显示三个参数且能生效</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p4"></td><td class="dn">D4</td>
+        <td class="task"><b>拆文件</b><span>拆成 <code>models.py</code>（数据类）+ <code>cli.py</code>（入口），用 import 串起来</span></td>
+        <td><span class="kch">模块</span><span class="kch">__name__</span></td><td class="ln">~40 行</td>
+        <td class="acc"><code>python -m cli list</code> 能跑</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p5"></td><td class="dn">D5</td>
+        <td class="task"><b>第一次测试</b><span>写 5 个 pytest 用例：正常查 / 未知设备 / 空列表 / CPU 边界 / 文件不存在</span></td>
+        <td><span class="kch">pytest</span></td><td class="ln">~45 行</td>
+        <td class="acc"><code>pytest -q</code> → 5 passed</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p6"></td><td class="dn">D6</td>
+        <td class="task"><b>加重试和计时</b><span>用 <code>retry_call()</code> 包住采集，用 <code>Timer</code> 打印每台设备耗时</span></td>
+        <td><span class="kch">重试</span><span class="kch">计时</span></td><td class="ln">~30 行</td>
+        <td class="acc">输出里每台设备都有耗时</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p7"></td><td class="dn">D7</td>
+        <td class="task"><b>合成 CLI</b><span>把前 6 天合成 <code>snmpcheck</code>，带 <code>list</code> / <code>status</code> 两个子命令</span></td>
+        <td><span class="kch">subparsers</span></td><td class="ln">~50 行</td>
+        <td class="acc"><code>snmpcheck list</code> 与 <code>status</code> 都能跑</td></tr>
+
+      <tr class="wk"><td colspan="6">第 2 周 · 接真数据 —— 从模拟走向 pysnmp，这一周是你的主场</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p8"></td><td class="dn">D8</td>
+        <td class="task"><b>第一次真采集</b><span>pip 装 pysnmp，用 <code>getCmd</code> 读 sysDescr / sysName / sysUpTime</span></td>
+        <td><span class="kch">hlapi</span><span class="kch">OID</span></td><td class="ln">~35 行</td>
+        <td class="acc">能打印设备描述（无设备时给出清晰报错）</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p9"></td><td class="dn">D9</td>
+        <td class="task"><b>结果结构化</b><span>把 GET 结果转成 dataclass，用 <code>safe_int()</code> 处理异常值</span></td>
+        <td><span class="kch">dataclass</span><span class="kch">类型转换</span></td><td class="ln">~40 行</td>
+        <td class="acc">字段类型全对，<code>mypy</code> 无报错</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p10"></td><td class="dn">D10</td>
+        <td class="task"><b>WALK 接口表</b><span>用 <code>nextCmd</code> 走 ifDescr / ifOperStatus，结果用 <code>fmt_table()</code> 打印</span></td>
+        <td><span class="kch">nextCmd</span><span class="kch">OID 树</span></td><td class="ln">~45 行</td>
+        <td class="acc">表格至少 4 行，序号对齐</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p11"></td><td class="dn">D11</td>
+        <td class="task"><b>落盘</b><span>结果同时写 CSV 和 JSON，CSV 用 <code>utf-8-sig</code></span></td>
+        <td><span class="kch">csv</span><span class="kch">编码</span></td><td class="ln">~25 行</td>
+        <td class="acc">Excel 打开中文不乱码</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p12"></td><td class="dn">D12</td>
+        <td class="task"><b>错误分类</b><span>超时 / 认证失败 / 无此 OID 三种情况给三种提示，别一律「出错了」</span></td>
+        <td><span class="kch">异常分层</span></td><td class="ln">~40 行</td>
+        <td class="acc">故意填错 community，能看出是认证失败</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p13"></td><td class="dn">D13</td>
+        <td class="task"><b>配置外置</b><span>设备清单和 community 移到 <code>config.json</code>，代码里不写死</span></td>
+        <td><span class="kch">配置分离</span></td><td class="ln">~30 行</td>
+        <td class="acc">换配置不用改代码</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p14"></td><td class="dn">D14</td>
+        <td class="task"><b>并发采集</b><span>20 台设备用 asyncio + Semaphore 并发，输出异常 top5</span></td>
+        <td><span class="kch">asyncio</span><span class="kch">限流</span></td><td class="ln">~50 行</td>
+        <td class="acc">耗时不到串行的 1/3</td></tr>
+
+      <tr class="wk"><td colspan="6">第 3 周 · 工程化 —— 让它从「我的脚本」变成「别人能用的项目」</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p15"></td><td class="dn">D15</td>
+        <td class="task"><b>补类型注解</b><span>给所有函数加注解，跑到 <code>mypy</code> 零报错</span></td>
+        <td><span class="kch">typing</span></td><td class="ln">~0 新增 / 全改</td>
+        <td class="acc"><code>mypy .</code> → Success</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p16"></td><td class="dn">D16</td>
+        <td class="task"><b>统一风格</b><span><code>ruff format</code> 格式化 + <code>ruff check</code> 清零</span></td>
+        <td><span class="kch">ruff</span></td><td class="ln">~10 行改动</td>
+        <td class="acc">两条命令全绿</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p17"></td><td class="dn">D17</td>
+        <td class="task"><b>写 README</b><span>安装 / 用法 / 参数 / 一段真实输出示例</span></td>
+        <td><span class="kch">文档</span></td><td class="ln">~60 行 md</td>
+        <td class="acc">别人照 README 能跑起来</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p18"></td><td class="dn">D18</td>
+        <td class="task"><b>加安全护栏</b><span><code>--dry-run</code> 不落盘；重启端口这类动作要 <code>input()</code> 确认</span></td>
+        <td><span class="kch">人机确认</span></td><td class="ln">~35 行</td>
+        <td class="acc">输入 N 时不留任何副作用</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p19"></td><td class="dn">D19</td>
+        <td class="task"><b>变成可安装包</b><span>写 <code>pyproject.toml</code>，<code>pip install -e .</code>，任意目录能调 <code>snmpcheck</code></span></td>
+        <td><span class="kch">打包</span><span class="kch">entry_points</span></td><td class="ln">~25 行</td>
+        <td class="acc">换到别的目录也能执行</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p20"></td><td class="dn">D20</td>
+        <td class="task"><b>测覆盖率</b><span><code>pytest-cov</code> 看覆盖率，把核心逻辑补到 60% 以上</span></td>
+        <td><span class="kch">覆盖率</span></td><td class="ln">~50 行</td>
+        <td class="acc">报告显示 core ≥ 60%</td></tr>
+      <tr><td class="ckc"><input type="checkbox" data-k="p21"></td><td class="dn">D21</td>
+        <td class="task"><b>发布</b><span>push GitHub，打 tag <code>v0.1</code>，写 release note（做了什么、怎么跑、已知限制）</span></td>
+        <td><span class="kch">git tag</span></td><td class="ln">—</td>
+        <td class="acc">仓库链接可访问，tag 存在</td></tr>
+    </tbody>
+  </table>
+
+  <div class="have">
+    <h2>已经给你备好的东西（不用另找素材）</h2>
+    <ul>
+      <li><code>week1/snippets.py</code> —— <b>10 个高频片段，实测跑通、mypy/ruff 全绿</b>：日志、JSON 读写、表格输出、CSV、重试、环境变量、分批、安全转换、计时。前两周你每天都在用它。</li>
+      <li><code>week1/day1_types.py</code> —— D1~D5 的改造对象（数据类、异常、文件写入都在里面）。</li>
+      <li><code>week1/day2_async.py</code> —— D6 / D14 的参考（gather、超时、Semaphore）。</li>
+      <li><code>week1/day6_agent_llm.py</code> —— D12 / D18 的参考（<b>异常转结构化错误</b>、高危动作人工确认）。</li>
+      <li><code>snmp-agent-demo/snmp_client.py</code> —— D8~D10 直接抄它的 pysnmp 用法（真机 + 模拟双通道）。</li>
+    </ul>
+    <pre><span class="cm"># 起点命令：先跑一遍片段库，看看你以后每天会用到什么</span>
+cd week1
+python snippets.py
+python -c "from snippets import setup_logger, fmt_table; print('import 成功')"</pre>
+  </div>
+
+  <div class="goal">
+    <h2>怎么判断「我算会写了」——三个可验证的信号</h2>
+    <ul>
+      <li><b>信号 1</b>：不看任何参考，30 分钟内能从零写出「读 json → 处理 → 写 csv」的 60 行脚本。</li>
+      <li><b>信号 2</b>：看到一屏 traceback，30 秒内能指着最后一行说出「这是我自己第几行的问题」。</li>
+      <li><b>信号 3</b>：能把自己 D21 的项目讲给同事听 20 分钟，讲清模块职责、异常边界、为什么这么拆。</li>
+    </ul>
+    <p style="font-size:12.8px;color:#64748b;margin:8px 0 0">三个都做到，你在面试里就敢说「Python 熟练」，因为你有东西可讲——这比简历上写「精通 Python」有用一百倍。</p>
+  </div>
+
+  <div class="warn">
+    <h2>四个千万别（这次的坑和上次不一样）</h2>
+    <ul>
+      <li><b>别追求「先学完再写」。</b>你已经是「学了很多、写得少」的状态，再学只会更糟。写不动的地方再回去查，这叫按需补课。</li>
+      <li><b>别一天做三个任务。</b>30 行写透 > 150 行抄完。任务量是设计过的，跳着做等于没做。</li>
+      <li><b>别一直用模拟数据。</b>D8 之后必须碰真的 pysnmp，哪怕连的是自己的电脑或一台旧交换机。真实报错才是老师。</li>
+      <li><b>别把「跑通了」当完成。</b>每天都要跑一遍 <code>ruff check</code> + <code>mypy</code>，红着过夜第二天会更难改。</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    21 天 × 40 分钟 ≈ 14 小时，产出约 800 行代码 + 一个能讲的项目。<br>
+    这比任何一门「Python 从入门到精通」都短，但比它们有用。
+  </div>
+</main>
+
+<script>
+(function () {
+  var KEY = 'py21-v1';
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input[type=checkbox]'));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { saved = {}; }
+
+  function refresh() {
+    var done = 0;
+    boxes.forEach(function (b) {
+      if (b.checked) done++;
+      var tr = b.closest('tr');
+      if (tr && tr.classList.contains('done') !== b.checked) tr.classList.toggle('done', b.checked);
+    });
+    var pct = boxes.length ? Math.round(done / boxes.length * 100) : 0;
+    document.getElementById('pfill').style.width = pct + '%';
+    document.getElementById('pnum').textContent = done + ' / ' + boxes.length + ' 天';
+  }
+
+  boxes.forEach(function (b) {
+    if (saved[b.dataset.k]) b.checked = true;
+    b.addEventListener('change', function () {
+      saved[b.dataset.k] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      refresh();
+    });
+  });
+  refresh();
+})();
+</script>
+</body>
+</html>

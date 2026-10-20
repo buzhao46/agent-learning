@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Day 1 学习资源导航 · Python 基础速通</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#f5f7fa;--panel:#fff;--line:#e2e8f0;--txt:#1f2937;--txt2:#64748b;--txt3:#94a3b8;
+        --blue:#2563eb;--blue2:#eff6ff;--green:#15803d;--green2:#f0fdf4;--amber:#b45309;--amber2:#fffbeb;
+        --red:#b91c1c;--red2:#fef2f2;--code:#0f172a}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.68;-webkit-font-smoothing:antialiased}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:18px 22px 16px}
+  .hrow{max-width:980px;margin:0 auto}
+  h1{font-size:18px;margin:0 0 4px;font-weight:700;letter-spacing:-.2px}
+  .sub{font-size:12.5px;color:var(--txt2)}
+  main{max-width:980px;margin:0 auto;padding:18px 22px 70px}
+
+  .lead{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px;margin-bottom:16px}
+  .lead p{margin:0 0 8px;font-size:13.5px}
+  .lead p:last-child{margin-bottom:0}
+  .lead b{color:#1e3a8a}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:15px;overflow:hidden}
+  .chead{display:flex;align-items:center;gap:10px;padding:12px 18px;background:#f8fafc;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .cno{width:23px;height:23px;border-radius:7px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;
+       display:flex;align-items:center;justify-content:center;flex:none}
+  .chead h2{font-size:15px;margin:0;font-weight:700}
+  .cmin{font-size:12px;color:var(--txt2);margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .cbody{padding:14px 18px 16px}
+
+  .pick{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed #eef2f7}
+  .pick:last-of-type{border-bottom:none}
+  .lvl{flex:none;font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 7px;margin-top:2px;white-space:nowrap;letter-spacing:.2px}
+  .l1{background:var(--blue2);color:var(--blue)}
+  .l2{background:var(--green2);color:var(--green)}
+  .l3{background:#f1f5f9;color:var(--txt2)}
+  .pick .pd{flex:1;min-width:0}
+  .pick .pt{font-size:13.5px;font-weight:600}
+  .pick .pt a{color:var(--blue);text-decoration:none;border-bottom:1px solid #bfdbfe}
+  .pick .pt a:hover{border-bottom-color:var(--blue)}
+  .pick .px{font-size:12.5px;color:var(--txt2)}
+  .pick .px code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px;
+                 font-family:ui-monospace,Menlo,Consolas,monospace;color:#334155}
+
+  .do{margin-top:12px;background:var(--amber2);border:1px solid #fde68a;border-radius:10px;padding:10px 13px}
+  .do h4{margin:0 0 4px;font-size:12.5px;color:var(--amber)}
+  .do p{margin:0 0 5px;font-size:12.8px;color:#78350f}
+  .do p:last-child{margin-bottom:0}
+
+  .map{margin-top:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.8px;background:#fff;border:1px solid var(--line);
+        border-radius:10px;overflow:hidden}
+  th,td{padding:7px 11px;text-align:left;border-bottom:1px solid #f1f5f9;vertical-align:top}
+  th{background:#f8fafc;font-weight:600;color:var(--txt2);font-size:12px}
+  tr:last-child td{border-bottom:none}
+  td code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px;
+          font-family:ui-monospace,Menlo,Consolas,monospace}
+  .arw{color:var(--txt3);text-align:center;width:44px}
+
+  pre{background:var(--code);color:#e2e8f0;border-radius:9px;padding:11px 13px;margin:8px 0 0;
+      font-family:ui-monospace,Menlo,Consolas,"Courier New",monospace;font-size:12.3px;line-height:1.62;overflow-x:auto}
+  pre .cm{color:#64748b}
+  pre .er{color:#fca5a5}
+  pre .ok{color:#86efac}
+
+  .warn{background:var(--red2);border:1px solid #fecaca;border-radius:12px;padding:14px 18px;margin-bottom:15px}
+  .warn h3{margin:0 0 7px;font-size:14px;color:var(--red)}
+  .warn ul{margin:0;padding-left:18px;font-size:13px;color:#7f1d1d}
+  .warn li{margin-bottom:5px}
+  .warn code{background:#fee2e2;border-radius:4px;padding:0 4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+
+  .plan{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+  .plan h3{margin:0 0 8px;font-size:14px}
+  .tl{display:flex;gap:10px;padding:6px 0;font-size:12.8px;border-bottom:1px dashed #eef2f7}
+  .tl:last-child{border-bottom:none}
+  .tl .t{flex:none;width:74px;color:var(--blue);font-weight:600;font-variant-numeric:tabular-nums}
+  .tl .c{flex:1}
+  .foot{margin-top:16px;font-size:12px;color:var(--txt3);text-align:center;line-height:1.8}
+  @media(max-width:700px){.cmin{margin-left:0;width:100%}}
+  @media print{.lvl{border:1px solid #cbd5e1}pre{background:#f8fafc;color:#0f172a;border:1px solid #e2e8f0}
+    .warn,.do{break-inside:avoid}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <h1>Day 1 · 学习资源导航</h1>
+    <div class="sub">类型注解 · 异常处理 · venv/pip · 项目结构 ｜ 按「前端 + 嵌入式 Web」底子取舍，Java 只当类比 ｜ 所有链接已实测可打开</div>
+  </div>
+</header>
+
+<main>
+
+  <div class="lead">
+    <p><b>先说结论：</b>你不需要「从零学 Python」，但也别把自己当"语法已通"。编程的基本功（变量、循环、函数、模块、异常）你有；<b>缺的是三样</b>：Python 的表达方式、<b>类型注解这套运行时不存在的东西</b>、以及工程化的环境管理。</p>
+    <p><b>所以资源取舍原则：</b>官方文档当字典查（中文版质量够用）+ 一页速查表映射语法 + <b>立刻用 mypy 让自己报错</b>。视频课对你 ROI 最低，一律不推荐。<b>Java 只当类比用</b>——看得懂 <code>class</code> 和接口概念就够了，不需要为这条路去补 Java。</p>
+    <p style="color:#64748b;font-size:12.8px">下面每条链接我都 curl 验过 200；官方文档的中文页有时会重定向，如果打不开就把 URL 里的 <code style="background:#f1f5f9;padding:1px 4px;border-radius:4px">zh-cn</code> 换成 <code style="background:#f1f5f9;padding:1px 4px;border-radius:4px">en</code>。</p>
+  </div>
+
+  <!-- 1 类型注解 -->
+  <div class="card">
+    <div class="chead"><span class="cno">1</span><h2>类型注解（最该花时间的一块）</h2><span class="cmin">约 30 分钟</span></div>
+    <div class="cbody">
+      <div class="pick">
+        <span class="lvl l1">主推</span>
+        <div class="pd">
+          <div class="pt"><a href="https://docs.python.org/zh-cn/3/library/typing.html" target="_blank">Python 官方 typing 文档（中文）</a></div>
+          <div class="px">别通读。只看 4 处：<code>Optional / Union</code>（现在直接写 <code>T | None</code>）、<code>list[str] / dict[str, int]</code> 泛型、<code>Literal</code>、<code>Protocol</code>。其余当字典备查。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l2">速查</span>
+        <div class="pd">
+          <div class="pt"><a href="https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html" target="_blank">mypy cheat sheet（一页纸）</a></div>
+          <div class="px">这张表覆盖你 90% 会用到的语法，<b>建议直接打印或贴在编辑器旁边</b>。比任何教程都高效。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l3">选读</span>
+        <div class="pd">
+          <div class="pt"><a href="https://realpython.com/python-type-checking/" target="_blank">Real Python · Python Type Checking</a></div>
+          <div class="px">英文长文，只读 <i>Gradual typing</i> 和 <i>Protocol</i> 两节（约 20 分钟）。Protocol 就是 Python 版的 interface，理解它你就懂为什么 Python 不写 <code>implements</code>。</div>
+        </div>
+      </div>
+
+      <div class="map">
+        <table>
+          <tr><th style="width:36%">你熟的（JS / C / Java 皮毛都算）</th><th style="width:44px"></th><th>Python 写法</th></tr>
+          <tr><td><code>Optional&lt;Device&gt;</code></td><td class="arw">→</td><td><code>Device | None</code></td></tr>
+          <tr><td><code>enum Status</code></td><td class="arw">→</td><td><code>Literal["up", "down"]</code>（运行时就是 str，零开销）</td></tr>
+          <tr><td><code>interface Probe</code></td><td class="arw">→</td><td><code>class Probe(Protocol)</code>（结构化，不用显式实现）</td></tr>
+          <tr><td><code>Map&lt;String, List&lt;Device&gt;&gt;</code></td><td class="arw">→</td><td><code>dict[str, list[Device]]</code></td></tr>
+          <tr><td>泛型 <code>&lt;T&gt;</code></td><td class="arw">→</td><td><code>TypeVar("T")</code></td></tr>
+        </table>
+      </div>
+
+      <div class="do">
+        <h4>今天必须做的一个动作</h4>
+        <p>注解<b>不会</b>在运行时自动检查（这点和 Java 完全不同），必须靠静态检查器。装上跑一次，你才会真正记住：</p>
+        <pre>pip install mypy
+mypy day1_typing_drill.py</pre>
+        <p style="margin-top:6px">我给你准备了这个钻练文件，里面有 <b>3 处故意写错的类型</b>。目标：修到 <code style="background:#fde68a;padding:0 3px;border-radius:3px">Success</code>。我实测会报 4 条：</p>
+        <pre><span class="er">day1_typing_drill.py:30: error:</span> Missing return statement  [return]
+<span class="er">day1_typing_drill.py:32: error:</span> Incompatible return value type (got "str", expected "int")  [return-value]
+<span class="er">day1_typing_drill.py:38: error:</span> Argument "status" to "Device" has incompatible type "str"; expected "Literal['up', 'down']"  [arg-type]
+<span class="er">day1_typing_drill.py:49: error:</span> Item "None" of "Device | None" has no attribute "cpu"  [union-attr]
+Found 4 errors in 1 file (checked 1 source file)</pre>
+        <p style="margin-top:6px">修法有两类：<b>改代码</b>（真返回 int / 加 None 判断）或<b>改注解</b>（把参数类型放宽）。两种都对，但你要能说出<b>为什么选这个</b>——这就是面试里「你懂不懂类型系统」的分水岭。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 异常 -->
+  <div class="card">
+    <div class="chead"><span class="cno">2</span><h2>异常处理（Agent 项目的生死线）</h2><span class="cmin">约 20 分钟</span></div>
+    <div class="cbody">
+      <div class="pick">
+        <span class="lvl l1">主推</span>
+        <div class="pd">
+          <div class="pt"><a href="https://docs.python.org/zh-cn/3/tutorial/errors.html" target="_blank">官方教程 · 第 8 章 Errors and Exceptions（中文）</a></div>
+          <div class="px">就一章，20 分钟读完。<b>这一章务必读完</b>，它是后面所有工具调用、重试、降级逻辑的基础。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l2">规范</span>
+        <div class="pd">
+          <div class="pt"><a href="https://google.github.io/styleguide/pyguide.html" target="_blank">Google Python Style Guide</a></div>
+          <div class="px">只看 <i>Exceptions</i> 和 <i>Naming</i> 两节。团队协作、代码评审看的就是这套。</div>
+        </div>
+      </div>
+
+      <div class="map">
+        <table>
+          <tr><th style="width:34%">必须掌握</th><th>为什么重要（落到你的 Agent 上）</th></tr>
+          <tr><td><code>try / except / else / finally</code></td><td><code>finally</code> 里关连接——SNMP 会话、文件句柄泄漏都靠它</td></tr>
+          <tr><td><code>raise X from e</code></td><td>保留原始异常链。<b>线上排障时没有 from，你只能看到一个毫无信息的外层错误</b></td></tr>
+          <tr><td>自定义异常</td><td>继承 <code>RuntimeError</code>，让调用方能区分「设备离线」和「参数传错」</td></tr>
+          <tr><td>EAFP 风格</td><td>Python 偏爱「先做，出错再捕」，而不是「先判断再干」（Java 习惯反过来）</td></tr>
+          <tr><td><code>contextlib.suppress</code></td><td>替代空 except，至少意图明确</td></tr>
+        </table>
+      </div>
+
+      <div class="do">
+        <h4>一个反例，记住它一辈子</h4>
+        <p><b>绝对不要</b>写这种：</p>
+        <pre><span class="cm"># 错误示范：Agent 里这么写，模型永远不知道工具失败了</span>
+try:
+    result = get_interface_errors(device)
+except:
+    pass          <span class="er"># 静默吞掉 → 模型拿到 None → 幻觉出一个诊断</span></pre>
+        <p style="margin-top:6px">正确姿势在 <code>day6_agent_llm.py</code> 的 <code>execute_tool()</code> 里：把异常<b>转成结构化的错误对象喂回模型</b>，模型看到 <code>{"error": "..."}</code> 才知道该换策略。这就是「Agent 能自我修正」的物理基础。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 venv/pip -->
+  <div class="card">
+    <div class="chead"><span class="cno">3</span><h2>venv / pip（环境隔离）</h2><span class="cmin">约 20 分钟</span></div>
+    <div class="cbody">
+      <div class="pick">
+        <span class="lvl l1">主推</span>
+        <div class="pd">
+          <div class="pt"><a href="https://docs.python.org/zh-cn/3/library/venv.html" target="_blank">官方 venv 文档（中文）</a></div>
+          <div class="px">只看开头「创建虚拟环境」和「激活」两段，后面 API 部分跳过。理解 <code>bin/Scripts</code> 里到底放了什么就行。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l2">选读</span>
+        <div class="pd">
+          <div class="pt"><a href="https://realpython.com/python-virtual-environments-a-primer/" target="_blank">Real Python · venv 入门</a></div>
+          <div class="px">讲清了「为什么需要隔离」。你熟悉 Maven 的 per-project 依赖，看这篇会有强烈既视感。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l3">2026 现状</span>
+        <div class="pd">
+          <div class="pt"><a href="https://docs.astral.sh/uv/" target="_blank">uv（新一代包管理器）</a></div>
+          <div class="px">现在都市主流了：一条命令替代 venv + pip + pip-tools，速度快 10–100 倍，自带 lock 文件。建议<b>先懂 venv 原理，再用 uv 干活</b>。简历里写「用 uv 管理依赖」是加分项。</div>
+        </div>
+      </div>
+
+      <div class="do">
+        <h4>必须练会的 6 条命令</h4>
+        <pre>python -m venv .venv                        <span class="cm"># 建环境（等价新建一个独立 JDK 沙箱）</span>
+.venv\Scripts\activate                      <span class="cm"># 激活（macOS/Linux: source .venv/bin/activate）</span>
+pip install -r requirements.txt             <span class="cm"># 按清单装</span>
+pip freeze &gt; requirements.txt               <span class="cm"># 反向导出（记得去掉无关包）</span>
+pip install -e .                             <span class="cm"># 本地可编辑安装，改代码不用重装</span>
+pip install xxx -i https://pypi.tuna.tsinghua.edu.cn/simple   <span class="cm"># 国内加速</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 项目结构 -->
+  <div class="card">
+    <div class="chead"><span class="cno">4</span><h2>项目结构</h2><span class="cmin">约 30 分钟</span></div>
+    <div class="cbody">
+      <div class="pick">
+        <span class="lvl l1">主推</span>
+        <div class="pd">
+          <div class="pt"><a href="https://docs.python-guide.org/writing/structure/" target="_blank">The Hitchhiker's Guide · Structuring Your Project</a></div>
+          <div class="px">这一章是这个问题最经典的答案，没有之一。看完你就懂为什么要 src layout、为什么 <code>__init__.py</code> 不能乱放逻辑。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l2">打包</span>
+        <div class="pd">
+          <div class="pt"><a href="https://packaging.python.org/en/latest/tutorials/packaging-projects/" target="_blank">PyPA 官方打包教程</a></div>
+          <div class="px">中文页已 404（我验过），用英文版。只有你要「把自己的工具包 pip install 给别人用」时才需要，Day 1 可以先跳过。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l3">选读</span>
+        <div class="pd">
+          <div class="pt"><a href="https://realpython.com/python-modules-packages/" target="_blank">Real Python · Modules and Packages</a></div>
+          <div class="px">补 <code>import</code> 机制和 <code>__init__.py</code>。你踩过 JS 的模块解析，看这个很快。</div>
+        </div>
+      </div>
+
+      <div class="do">
+        <h4>直接抄这个结构（Agent 项目通用）</h4>
+        <pre>snmp-agent/
+├── pyproject.toml            <span class="cm"># 依赖 + 工具配置（mypy/ruff 都写这）</span>
+├── README.md
+├── .env.example              <span class="cm"># 配置模板；真 .env 进 .gitignore</span>
+├── src/
+│   └── agent/
+│       ├── __init__.py
+│       ├── main.py           <span class="cm"># 入口：CLI 或 FastAPI 启动</span>
+│       ├── core.py           <span class="cm"># ReAct 循环 / 编排</span>
+│       ├── llm.py            <span class="cm"># 模型客户端（可替换）</span>
+│       └── tools/
+│           ├── snmp.py       <span class="cm"># 采集工具</span>
+│           └── registry.py   <span class="cm"># 工具注册表（schema + 实现）</span>
+└── tests/
+    └── test_core.py</pre>
+        <p style="margin-top:6px"><b>两个关键点：</b>① <code>src/</code> 避免「本地目录遮蔽安装包」的经典坑；② <code>tools/</code> 独立成目录，将来加 MCP 或换框架时只需改 <code>registry.py</code>。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 练习场 -->
+  <div class="card">
+    <div class="chead"><span class="cno">5</span><h2>练习场（光看没用）</h2><span class="cmin">按需</span></div>
+    <div class="cbody">
+      <div class="pick">
+        <span class="lvl l1">推荐</span>
+        <div class="pd">
+          <div class="pt"><a href="https://exercism.org/tracks/python" target="_blank">Exercism · Python Track</a></div>
+          <div class="px">免费，且有<b>真人 mentor 逐行评审</b>——这是它比 LeetCode 强的地方。做前 10 题足够，重点看 mentor 怎么点评你的异常处理和命名。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l2">可视化</span>
+        <div class="pd">
+          <div class="pt"><a href="https://pythontutor.com/" target="_blank">Python Tutor</a></div>
+          <div class="px">单步执行、画出变量和对象的引用关系。专门用来理解<b>「可变默认值为什么会被共享」</b>那个坑——看一遍就再也不会忘。</div>
+        </div>
+      </div>
+      <div class="pick">
+        <span class="lvl l3">规范</span>
+        <div class="pd">
+          <div class="pt"><a href="https://peps.python.org/pep-0008/" target="_blank">PEP 8 官方风格指南</a></div>
+          <div class="px">别通读（130 页）。装个 ruff 让它替你执行，遇到争议再回来查具体条款。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 避坑 -->
+  <div class="warn">
+    <h3>六个「千万别」，比推荐更重要</h3>
+    <ul>
+      <li><b>别看 40 小时全套视频课。</b>你会 JS/前端、读过 C，编程概念不是零基础，看视频的 ROI 很低——但<b>该动手写的别跳</b>，Python 的坑只有手打才会撞上。</li>
+      <li><b>别用 Python 2 教程。</b>看到 <code>print "hi"</code>、<code>u"中文"</code>、<code>dict.has_key()</code> 立刻关掉，这些都是十年前的东西。</li>
+      <li><b>别一开始啃《流畅的 Python》。</b>它是好书，但属于第二阶段（3 个月后再读）。现在读会打击信心。</li>
+      <li><b>别学 Django / Flask 的目录结构。</b>对你毫无用处，你的战场是 FastAPI + Agent。</li>
+      <li><b>别抄「Python 面试 100 题」。</b>你面的不是 Python 岗，是 Agent 应用岗，面试官问的是系统设计。</li>
+      <li><b>别跳过 mypy。</b>Agent 项目里「类型写错」= 「工具参数传错」= 线上莫名失败，这是最高频的隐性 bug 来源。</li>
+    </ul>
+  </div>
+
+  <!-- 2小时版 -->
+  <div class="plan">
+    <h3>如果只有 2 小时 · 压缩执行表</h3>
+    <div class="tl"><span class="t">0:00–0:15</span><span class="c">建 venv 装依赖（mypy + ruff 一起装），跑通 <code style="background:#f1f5f9;padding:0 4px;border-radius:4px">day1_types.py</code></span></div>
+    <div class="tl"><span class="t">0:15–0:45</span><span class="c">官方 tutorial 第 3–5 章<b>跳读</b>，只看和你熟悉的 JS/C 不同的：缩进块、动态类型、切片、列表推导式</span></div>
+    <div class="tl"><span class="t">0:45–1:15</span><span class="c">typing 4 个小节 + mypy cheat sheet，然后修 <code style="background:#f1f5f9;padding:0 4px;border-radius:4px">day1_typing_drill.py</code> 的 4 个报错</span></div>
+    <div class="tl"><span class="t">1:15–1:35</span><span class="c">异常章节第 8 章通读 + 把 <code style="background:#f1f5f9;padding:0 4px;border-radius:4px">day1_types.py</code> 的 <code style="background:#f1f5f9;padding:0 4px;border-radius:4px">except SnmpError</code> 加上 <code style="background:#f1f5f9;padding:0 4px;border-radius:4px">from e</code></span></div>
+    <div class="tl"><span class="t">1:35–1:55</span><span class="c">Hitchhiker's 的 Structuring 章节，把上面那个 <code style="background:#f1f5f9;padding:0 4px;border-radius:4px">src/</code> 结构抄一遍</span></div>
+    <div class="tl"><span class="t">1:55–2:00</span><span class="c"><code style="background:#f1f5f9;padding:0 4px;border-radius:4px">ruff check . &amp;&amp; mypy .</code> 全绿 → commit</span></div>
+  </div>
+
+  <div class="foot">
+    资源不在多，在于「看完立刻改一行代码」。<br>
+    这页建议存下来，Day 1 做完后不用再看第二遍。
+  </div>
+</main>
+</body>
+</html>

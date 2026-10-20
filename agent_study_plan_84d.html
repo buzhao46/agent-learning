@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent 应用开发 · 84 天逐日学习计划</title>
+<style>
+  *{box-sizing:border-box}
+  :root{--bg:#f5f7fa;--panel:#fff;--line:#e2e8f0;--txt:#1f2937;--txt2:#64748b;--txt3:#94a3b8;
+        --blue:#2563eb;--green:#15803d;--amber:#b45309;--red:#b91c1c}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .top{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);
+       padding:13px 22px 10px}
+  .row{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  h1{font-size:17px;margin:0;font-weight:700}
+  .sub{font-size:12px;color:var(--txt2)}
+  .pwrap{flex:1;min-width:180px;display:flex;align-items:center;gap:10px}
+  .pbar{flex:1;height:8px;background:#eef2f7;border-radius:99px;overflow:hidden}
+  .pfill{height:100%;background:var(--blue);width:0;transition:width .3s;border-radius:99px}
+  .pnum{font-size:12px;color:var(--txt2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .filters{max-width:1080px;margin:10px auto 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:5px 13px;font-size:12.5px;
+        color:var(--txt2);cursor:pointer;transition:.15s;font-family:inherit}
+  .chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+  .spacer{flex:1}
+  .resetBtn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;
+            font-size:12.5px;color:var(--txt2);cursor:pointer;font-family:inherit}
+  .resetBtn:hover{color:var(--red);border-color:#fecaca}
+  main{max-width:1080px;margin:0 auto;padding:18px 22px 60px}
+  .banner{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 16px;
+          font-size:13px;color:#1e40af;margin-bottom:16px;line-height:1.7}
+  .week{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin-bottom:14px;overflow:hidden}
+  .whead{padding:12px 16px;background:#f8fafc;border-bottom:1px solid var(--line);
+         display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .wnum{font-weight:700;color:var(--blue);font-size:14px}
+  .wgoal{font-size:12.5px;color:var(--txt2)}
+  .wms{font-size:12px;color:var(--amber);margin-left:auto;font-weight:500}
+  .day{display:flex;gap:12px;align-items:flex-start;padding:10px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer}
+  .day:last-child{border-bottom:none}
+  .day:hover{background:#fafbfc}
+  .day input{margin-top:3px;width:16px;height:16px;accent-color:var(--blue);flex:none;cursor:pointer}
+  .dnum{font-size:12px;color:var(--txt3);width:48px;flex:none;font-variant-numeric:tabular-nums;padding-top:2px}
+  .dmain{flex:1;min-width:0}
+  .dtitle{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dtask{font-size:12.5px;color:var(--txt2);margin-top:2px}
+  .dout{font-size:12px;color:var(--txt3);margin-top:3px}
+  .dh{font-size:12px;color:var(--txt3);flex:none;padding-top:2px;font-variant-numeric:tabular-nums}
+  .tag{font-size:11px;padding:1px 8px;border-radius:99px;font-weight:500}
+  .t-fast{background:#f0fdf4;color:var(--green)}
+  .t-must{background:#eff6ff;color:var(--blue)}
+  .t-proj{background:#fffbeb;color:var(--amber)}
+  .t-rev{background:#f1f5f9;color:var(--txt2)}
+  .day.done{opacity:.55}
+  .day.done .dtitle{text-decoration:line-through}
+  .hidden{display:none}
+  @media(max-width:700px){.dh{display:none}.wms{width:100%;margin-left:0}}
+  @media print{.top{position:static}.filters,.resetBtn{display:none}body{background:#fff}
+    .week{break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="row">
+    <div>
+      <h1>Agent 应用开发 · 84 天逐日学习计划</h1>
+      <div class="sub">3 个月 · 12 周 · 84 天 · 工作日 1–1.5h / 周末 3–4h</div>
+    </div>
+    <div class="pwrap">
+      <div class="pbar"><div class="pfill" id="pfill"></div></div>
+      <div class="pnum" id="pnum">0 / 84</div>
+    </div>
+  </div>
+  <div class="filters">
+    <button class="chip on" data-m="0">全部</button>
+    <button class="chip" data-m="1">第 1 月 · 打基础</button>
+    <button class="chip" data-m="2">第 2 月 · 接工具</button>
+    <button class="chip" data-m="3">第 3 月 · 工程化</button>
+    <button class="chip" id="undoneChip">只看未完成</button>
+    <span class="spacer"></span>
+    <span class="pnum" id="hours"></span>
+    <button class="resetBtn" id="resetBtn">重置进度</button>
+  </div>
+</div>
+
+<main>
+  <div class="banner">
+    节奏建议：工作日每天 1–1.5h，周末 3–4h，每周约 14h。带「可提速」的任务可结合你的 Vue / SNMP 领域经验压缩（Day 1、Day 3 已改为「必做」：Java 不是你的强项，别按老手的节奏算），
+    省下的时间优先投到「项目」日。每天结束前花 10 分钟 commit 代码 + 写 3 行笔记。勾选状态自动保存在本地浏览器。
+  </div>
+  <div id="plan"></div>
+</main>
+
+<script>
+const TC = {'可提速':'t-fast','必做':'t-must','项目':'t-proj','复盘':'t-rev'};
+
+const PLAN = [
+ {month:1, week:1, goal:'Python 异步 + FastAPI + 大模型 API 调用', milestone:'可跑的 LLM 版 Agent', days:[
+  {d:1,  t:'Python 基础速通', task:'类型注解、异常处理、venv/pip、项目结构', out:'带类型注解的小脚本', h:1.5, tag:'必做'},
+  {d:2,  t:'asyncio 异步编程', task:'async/await、gather 并发、超时控制', out:'并发请求 3 个接口', h:1.5, tag:'必做'},
+  {d:3,  t:'FastAPI 入门', task:'路由、Pydantic 模型、依赖注入', out:'/health + /echo 接口', h:1.5, tag:'必做'},
+  {d:4,  t:'调用大模型 API', task:'OpenAI 兼容接口、messages 结构、流式输出', out:'命令行调用 DeepSeek/Qwen 成功', h:1.5, tag:'必做'},
+  {d:5,  t:'模型参数调优', task:'temperature / top_p / max_tokens / system prompt 对比实验', out:'参数对比实验记录', h:1.5, tag:'必做'},
+  {d:6,  t:'项目：LLM 版 Agent', task:'把 minimal_agent 的 RuleLLM 换成真实 LLM 决策', out:'可运行的 LLM 版 Agent', h:3.5, tag:'项目'},
+  {d:7,  t:'周复盘', task:'写周记、补漏、代码整理到 GitHub', out:'周记 + 仓库', h:1.5, tag:'复盘'}
+ ]},
+ {month:1, week:2, goal:'Prompt Engineering 系统训练', milestone:'设备配置解析器', days:[
+  {d:8,  t:'Prompt 四要素', task:'角色 / 任务 / 约束 / 输出格式', out:'3 版 prompt 对比', h:1.5, tag:'必做'},
+  {d:9,  t:'Few-shot 与示例选择', task:'示例数量、顺序、相似度对效果的影响', out:'few-shot 分类器', h:1.5, tag:'必做'},
+  {d:10, t:'结构化输出', task:'JSON mode、schema 校验、失败重试', out:'稳定输出 JSON 的函数', h:1.5, tag:'必做'},
+  {d:11, t:'控制幻觉', task:'grounding、引用来源、该拒答就拒答', out:'带出处的问答', h:1.5, tag:'必做'},
+  {d:12, t:'长上下文管理', task:'分段、摘要、检索前置、信息压缩', out:'长文档摘要流程', h:1.5, tag:'必做'},
+  {d:13, t:'项目：配置解析器', task:'输入设备配置文本，输出结构化 JSON', out:'解析 demo', h:3.5, tag:'项目'},
+  {d:14, t:'周复盘', task:'整理 prompt 模板库', out:'模板库 + 周记', h:1.5, tag:'复盘'}
+ ]},
+ {month:1, week:3, goal:'RAG 全链路（检索增强生成）', milestone:'设备手册问答', days:[
+  {d:15, t:'Embedding 原理', task:'向量化、相似度、模型选型（bge/m3e）', out:'相似度实验', h:1.5, tag:'必做'},
+  {d:16, t:'向量库 Chroma', task:'集合创建、增删查、元数据过滤', out:'本地向量库 demo', h:1.5, tag:'必做'},
+  {d:17, t:'文档切分策略', task:'chunk size / overlap / 语义切分对比', out:'切分效果对比', h:1.5, tag:'必做'},
+  {d:18, t:'检索 + 重排序', task:'召回 top-k、rerank 模型、阈值过滤', out:'带重排的检索', h:1.5, tag:'必做'},
+  {d:19, t:'组装 RAG pipeline', task:'检索 → 拼上下文 → 生成 → 引用', out:'完整 RAG 流程', h:1.5, tag:'必做'},
+  {d:20, t:'项目：设备手册问答', task:'导入 PDF/Markdown 手册，实现可溯源问答', out:'问答 demo', h:3.5, tag:'项目'},
+  {d:21, t:'周复盘', task:'评估检索命中率与相关性', out:'评估记录', h:1.5, tag:'复盘'}
+ ]},
+ {month:1, week:4, goal:'LangGraph 最小 Agent', milestone:'LangGraph 版巡检 Agent', days:[
+  {d:22, t:'LangGraph 核心', task:'State / Node / Edge 三要素', out:'最小可运行图', h:1.5, tag:'必做'},
+  {d:23, t:'条件边与循环', task:'add_conditional_edges、循环退出条件', out:'带分支的图', h:1.5, tag:'必做'},
+  {d:24, t:'Tool 定义与绑定', task:'工具 schema、参数校验、bind_tools', out:'2 个可用工具', h:1.5, tag:'必做'},
+  {d:25, t:'实现 ReAct 图', task:'agent → tools → agent 闭环', out:'跑通 ReAct', h:2, tag:'必做'},
+  {d:26, t:'记忆与 Checkpoint', task:'checkpointer、多轮状态持久化', out:'多轮记忆 demo', h:1.5, tag:'必做'},
+  {d:27, t:'项目：重写巡检 Agent', task:'把 SNMP 巡检 Agent 改用 LangGraph 编排', out:'LangGraph 版', h:3.5, tag:'项目'},
+  {d:28, t:'周复盘', task:'对比 RuleLLM 版与 LangGraph 版差异', out:'对比笔记', h:1.5, tag:'复盘'}
+ ]},
+ {month:2, week:5, goal:'SNMP 协议实战', milestone:'可复用的异步采集库', days:[
+  {d:29, t:'SNMP 原理', task:'v1/v2c/v3、OID/MIB、GET/WALK/TRAP', out:'OID 速查表 + 笔记', h:1.5, tag:'可提速'},
+  {d:30, t:'pysnmp GET', task:'读 sysDescr / sysUpTime / sysName', out:'读设备基础信息', h:1.5, tag:'可提速'},
+  {d:31, t:'WALK 与索引对齐', task:'walk 接口表，按索引合并多列', out:'接口状态表', h:1.5, tag:'必做'},
+  {d:32, t:'超时与重试', task:'超时、重试、批量并发、异常分类', out:'健壮的采集函数', h:1.5, tag:'必做'},
+  {d:33, t:'SNMP Trap（选做）', task:'Trap 接收与解析', out:'Trap 监听 demo', h:1.5, tag:'必做'},
+  {d:34, t:'项目：采集库封装', task:'异步 + 重试 + 统一返回结构', out:'可复用 SNMP 库', h:3.5, tag:'项目'},
+  {d:35, t:'周复盘', task:'补边界情况，写使用文档', out:'库文档', h:1.5, tag:'复盘'}
+ ]},
+ {month:2, week:6, goal:'Function Calling / MCP', milestone:'LLM 经 MCP 调 SNMP', days:[
+  {d:36, t:'Function Calling 原理', task:'tool schema、调用协议、结果回填', out:'手写 tool schema', h:1.5, tag:'必做'},
+  {d:37, t:'参数设计与校验', task:'Pydantic 校验、默认值、错误提示', out:'参数校验器', h:1.5, tag:'必做'},
+  {d:38, t:'多工具路由', task:'多工具并存时的选择与冲突处理', out:'正确选工具的 demo', h:1.5, tag:'必做'},
+  {d:39, t:'MCP 协议与 Server', task:'MCP 架构、tools 清单、传输方式', out:'MCP 学习笔记', h:1.5, tag:'必做'},
+  {d:40, t:'写 MCP Server', task:'把 SNMP 工具暴露为 MCP tools', out:'可运行 MCP Server', h:2, tag:'必做'},
+  {d:41, t:'项目：MCP 端到端', task:'LLM 通过 MCP 调用 SNMP 完成一次巡检', out:'端到端 demo', h:3.5, tag:'项目'},
+  {d:42, t:'周复盘', task:'整理工具清单与 schema 文档', out:'工具文档', h:1.5, tag:'复盘'}
+ ]},
+ {month:2, week:7, goal:'巡检 Agent 完整实现', milestone:'定时巡检全流程', days:[
+  {d:43, t:'需求拆解', task:'巡检指标、阈值规则、报告格式定义', out:'需求文档', h:1.5, tag:'必做'},
+  {d:44, t:'并发采集编排', task:'多设备并发、失败隔离、进度反馈', out:'并发采集', h:1.5, tag:'必做'},
+  {d:45, t:'阈值判断与分级', task:'正常/警告/严重 三级判定', out:'分级逻辑', h:1.5, tag:'必做'},
+  {d:46, t:'报告生成', task:'Markdown / HTML 报告模板', out:'报告模板', h:1.5, tag:'必做'},
+  {d:47, t:'定时任务', task:'APScheduler / cron 触发', out:'定时运行', h:1.5, tag:'必做'},
+  {d:48, t:'项目：完整巡检 Agent', task:'定时 → 采集 → 判定 → 报告 → 通知', out:'可演示完整版', h:3.5, tag:'项目'},
+  {d:49, t:'周复盘', task:'补异常场景，优化报告可读性', out:'周记', h:1.5, tag:'复盘'}
+ ]},
+ {month:2, week:8, goal:'告警排查 Agent', milestone:'Webhook 触发的排查 Agent', days:[
+  {d:50, t:'告警接入', task:'Webhook 接收、字段解析、去重', out:'接收告警 demo', h:1.5, tag:'必做'},
+  {d:51, t:'根因分析思路', task:'分层排查：物理/链路/协议/配置', out:'排查决策树', h:1.5, tag:'必做'},
+  {d:52, t:'工具编排', task:'收集信息 → 形成假设 → 验证假设', out:'排查流程', h:2, tag:'必做'},
+  {d:53, t:'Human-in-the-loop', task:'高风险动作人工确认', out:'确认机制', h:1.5, tag:'必做'},
+  {d:54, t:'处置建议与边界', task:'建议模板、禁止动作清单', out:'建议模板', h:1.5, tag:'必做'},
+  {d:55, t:'项目：排查 Agent', task:'告警进入 → 自动排查 → 输出根因与建议', out:'Webhook 触发版', h:3.5, tag:'项目'},
+  {d:56, t:'周复盘', task:'回放 3 个故障场景验证', out:'场景测试记录', h:1.5, tag:'复盘'}
+ ]},
+ {month:3, week:9, goal:'记忆与 RAG 进阶', milestone:'带历史经验的排查 Agent', days:[
+  {d:57, t:'记忆分层设计', task:'短期 / 长期 / 情景记忆', out:'记忆分层图', h:1.5, tag:'必做'},
+  {d:58, t:'历史故障库', task:'故障案例 schema、入库、检索', out:'故障库设计', h:1.5, tag:'必做'},
+  {d:59, t:'多轮状态管理', task:'会话状态、任务状态、断点续跑', out:'状态机实现', h:1.5, tag:'必做'},
+  {d:60, t:'上下文压缩', task:'摘要、关键信息抽取、token 预算', out:'压缩策略', h:1.5, tag:'必做'},
+  {d:61, t:'RAG 效果评估', task:'命中率、相关性、答案忠实度', out:'评估脚本', h:1.5, tag:'必做'},
+  {d:62, t:'项目：加历史经验', task:'排查时检索相似历史故障并借鉴', out:'带记忆版', h:3.5, tag:'项目'},
+  {d:63, t:'周复盘', task:'整理评估数据', out:'评估报告', h:1.5, tag:'复盘'}
+ ]},
+ {month:3, week:10, goal:'可观测与安全', milestone:'加固版 Agent', days:[
+  {d:64, t:'Tracing 接入', task:'Langfuse / LangSmith 记录每步轨迹', out:'trace 可视化', h:1.5, tag:'必做'},
+  {d:65, t:'成本与延迟监控', task:'token 统计、耗时、单次任务成本', out:'监控面板', h:1.5, tag:'必做'},
+  {d:66, t:'Prompt 注入防御', task:'攻击样例、输入隔离、权限最小化', out:'攻防实验', h:1.5, tag:'必做'},
+  {d:67, t:'权限与沙箱', task:'工具白名单、只读/读写分级、沙箱执行', out:'沙箱方案', h:1.5, tag:'必做'},
+  {d:68, t:'运行护栏', task:'限流、降级、超时、最大步数、预算', out:'护栏代码', h:1.5, tag:'必做'},
+  {d:69, t:'项目：加固 Agent', task:'加护栏 + 审计日志 + 告警', out:'生产级加固版', h:3.5, tag:'项目'},
+  {d:70, t:'周复盘', task:'写安全清单', out:'安全 checklist', h:1.5, tag:'复盘'}
+ ]},
+ {month:3, week:11, goal:'部署上线', milestone:'可访问的在线 demo', days:[
+  {d:71, t:'Docker 基础', task:'镜像、Dockerfile、层缓存', out:'构建成功镜像', h:1.5, tag:'必做'},
+  {d:72, t:'容器化 Agent', task:'把服务与依赖打包', out:'可运行容器', h:1.5, tag:'必做'},
+  {d:73, t:'docker-compose', task:'agent + 向量库 + 反向代理', out:'一键启动', h:1.5, tag:'必做'},
+  {d:74, t:'CI/CD', task:'GitHub Actions 自动构建与检查', out:'CI 流水线', h:1.5, tag:'必做'},
+  {d:75, t:'部署与反代', task:'部署到服务器/云、Nginx、HTTPS', out:'可访问地址', h:1.5, tag:'必做'},
+  {d:76, t:'项目：部署 + 压测', task:'并发压测、故障演练', out:'上线 demo + 压测报告', h:3.5, tag:'项目'},
+  {d:77, t:'周复盘', task:'写部署文档', out:'部署手册', h:1.5, tag:'复盘'}
+ ]},
+ {month:3, week:12, goal:'作品集与求职', milestone:'简历 + 作品集 + 投递', days:[
+  {d:78, t:'项目文档', task:'README、架构图、技术选型说明', out:'完整项目文档', h:1.5, tag:'必做'},
+  {d:79, t:'录制 Demo', task:'2 分钟演示视频或 GIF', out:'演示素材', h:1.5, tag:'必做'},
+  {d:80, t:'简历 STAR 改写', task:'把 GoAhead/SNMP 项目改写成 AI 相关经历', out:'简历 v2', h:1.5, tag:'必做'},
+  {d:81, t:'GitHub 整理', task:'两个项目、清晰提交、置顶', out:'作品集主页', h:1.5, tag:'必做'},
+  {d:82, t:'系统设计面试', task:'Agent 系统设计常见题、答题框架', out:'答题卡', h:1.5, tag:'必做'},
+  {d:83, t:'模拟面试 + 投递', task:'模拟一轮，投递 10 家目标公司', out:'投递记录', h:2, tag:'项目'},
+  {d:84, t:'总结与迭代', task:'复盘薄弱项，定下一阶段计划', out:'下一阶段计划', h:1.5, tag:'复盘'}
+ ]}
+];
+
+const KEY = 'agent_study_progress_v1';
+let done = new Set(JSON.parse(localStorage.getItem(KEY) || '[]'));
+let curMonth = 0;
+let onlyUndone = false;
+
+const allDays = PLAN.flatMap(w => w.days);
+
+function tagClass(t){ return TC[t] || 't-rev'; }
+
+function render(){
+  const total = allDays.length;
+  const completed = allDays.filter(d => done.has(d.d)).length;
+  const pct = total ? Math.round(completed / total * 100) : 0;
+  document.getElementById('pfill').style.width = pct + '%';
+  document.getElementById('pnum').textContent = completed + ' / ' + total + '（' + pct + '%）';
+  const hours = allDays.filter(d => done.has(d.d)).reduce((s, d) => s + d.h, 0);
+  document.getElementById('hours').textContent = '已投入约 ' + hours.toFixed(1) + ' 小时';
+
+  let html = '';
+  PLAN.forEach(w => {
+    if (curMonth && w.month !== curMonth) return;
+    let daysHtml = '';
+    let visible = false;
+    w.days.forEach(d => {
+      const isDone = done.has(d.d);
+      if (onlyUndone && isDone) return;
+      visible = true;
+      const tag = d.tag ? '<span class="tag ' + tagClass(d.tag) + '">' + d.tag + '</span>' : '';
+      daysHtml +=
+        '<label class="day ' + (isDone ? 'done' : '') + '">' +
+          '<input type="checkbox" data-d="' + d.d + '" ' + (isDone ? 'checked' : '') + '>' +
+          '<span class="dnum">Day ' + d.d + '</span>' +
+          '<div class="dmain">' +
+            '<div class="dtitle">' + d.t + tag + '</div>' +
+            '<div class="dtask">' + d.task + '</div>' +
+            '<div class="dout">产出：' + d.out + '</div>' +
+          '</div>' +
+          '<span class="dh">' + d.h + 'h</span>' +
+        '</label>';
+    });
+    if (!visible) return;
+    html +=
+      '<section class="week">' +
+        '<div class="whead">' +
+          '<span class="wnum">Week ' + w.week + '</span>' +
+          '<span class="wgoal">' + w.goal + '</span>' +
+          '<span class="wms">里程碑：' + w.milestone + '</span>' +
+        '</div>' + daysHtml +
+      '</section>';
+  });
+  document.getElementById('plan').innerHTML = html || '<div style="text-align:center;color:#94a3b8;padding:40px">没有符合条件的任务</div>';
+}
+
+document.getElementById('plan').addEventListener('change', function(e){
+  if (!e.target.matches('input[type=checkbox]')) return;
+  const d = Number(e.target.dataset.d);
+  if (e.target.checked) done.add(d); else done.delete(d);
+  localStorage.setItem(KEY, JSON.stringify([...done]));
+  render();
+});
+
+document.querySelectorAll('.chip[data-m]').forEach(function(c){
+  c.addEventListener('click', function(){
+    curMonth = Number(c.dataset.m);
+    document.querySelectorAll('.chip[data-m]').forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+    render();
+  });
+});
+
+document.getElementById('undoneChip').addEventListener('click', function(){
+  onlyUndone = !onlyUndone;
+  this.classList.toggle('on', onlyUndone);
+  render();
+});
+
+document.getElementById('resetBtn').addEventListener('click', function(){
+  if (confirm('确定要清空所有打卡进度吗？')) {
+    done = new Set();
+    localStorage.removeItem(KEY);
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

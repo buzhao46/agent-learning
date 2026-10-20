@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>网络运维 Agent 架构与技术选型 + 3 个月转型路线</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f5f7fa; --bg3:#eef2f7; --line:#d8dee6;
+    --txt:#1f2937; --txt2:#5b6573; --txt3:#8a93a0;
+    --blue:#185FA5; --blue2:#378ADD; --blue3:#E6F1FB;
+    --green:#3B6D11; --green2:#EAF3DE; --amber:#854F0B; --amber2:#FAEEDA;
+    --purple:#534AB7; --purple2:#EEEDFE; --red:#A32D2D; --red2:#FCEBEB;
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--txt);background:var(--bg);margin:0;line-height:1.65;font-size:14px}
+  .page{max-width:1040px;margin:0 auto;padding:32px 28px 60px}
+  h1{font-size:23px;margin:0 0 4px;font-weight:700}
+  h2{font-size:18px;margin:34px 0 12px;padding-left:11px;border-left:4px solid var(--blue2)}
+  h3{font-size:15px;margin:18px 0 8px;color:var(--blue)}
+  .sub{color:var(--txt2);font-size:13px;margin:0 0 6px}
+  .tag{display:inline-block;background:var(--blue3);color:var(--blue);border-radius:6px;padding:2px 9px;font-size:12px;margin-right:6px}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  .note{background:var(--amber2);border:1px solid #FAC775;border-radius:10px;padding:12px 14px;font-size:13px;color:#633806;margin:12px 0}
+  /* architecture */
+  .arch{display:flex;flex-direction:column;align-items:stretch;gap:0;margin:10px 0}
+  .band{border-radius:12px;padding:14px 16px;border:1px solid var(--line)}
+  .band .bt{font-size:13px;font-weight:600;color:var(--txt2);margin-bottom:10px;letter-spacing:.3px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:12.5px}
+  .arrow{text-align:center;color:var(--txt3);font-size:20px;line-height:1;padding:5px 0}
+  .mid{display:flex;gap:12px;align-items:stretch}
+  .col{flex:1;border-radius:12px;padding:14px 14px;border:1px solid var(--line)}
+  .col.core{flex:1.5;background:var(--blue3);border-color:#B5D4F4}
+  .col.know{background:var(--green2);border-color:#C0DD97}
+  .col.guar{background:var(--red2);border-color:#F7C1C1}
+  .mods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  .mod{background:var(--bg);border:1px solid #B5D4F4;border-radius:8px;padding:8px 10px;font-size:12.5px}
+  .mod b{display:block;color:var(--blue);font-size:12.5px;margin-bottom:2px}
+  .col .bt{font-weight:600;margin-bottom:8px;font-size:13px}
+  .llm{margin-top:10px;background:var(--blue);color:#fff;border-radius:8px;padding:7px 10px;font-size:12.5px;text-align:center}
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--bg3);font-weight:600;color:var(--txt)}
+  td.y{background:var(--blue3);font-weight:600;color:var(--blue);white-space:nowrap}
+  tr:nth-child(even) td{background:#fafbfc}
+  /* roadmap */
+  .month{margin:16px 0}
+  .mhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .mbadge{background:var(--blue);color:#fff;border-radius:8px;padding:4px 12px;font-weight:600;font-size:13px}
+  .mgoal{color:var(--txt2);font-size:13px}
+  .wk{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .wk:last-child{border-bottom:none}
+  .wn{flex:none;width:54px;font-weight:600;color:var(--blue);font-size:13px;padding-top:1px}
+  .wt{flex:1;font-size:13px}
+  .wt b{color:var(--txt)}
+  .pill{display:inline-block;font-size:11.5px;border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .p-build{background:var(--blue3);color:var(--blue)}
+  .p-learn{background:var(--green2);color:var(--green)}
+  .p-ship{background:var(--amber2);color:var(--amber)}
+  footer{margin-top:36px;color:var(--txt3);font-size:12px;border-top:1px solid var(--line);padding-top:14px}
+  code{background:var(--bg3);border-radius:4px;padding:1px 5px;font-size:12.5px;font-family:Menlo,Consolas,monospace;color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <h1>网络运维 Agent：架构设计 + 技术选型 + 3 个月转型路线</h1>
+  <p class="sub">面向「网络 / 通信测试」背景（OTN / SDN / SNMP / SS7）的工程师，从现有工程能力平滑转入 Agent 应用开发。</p>
+  <p>
+    <span class="tag">场景：SNMP 自动巡检</span>
+    <span class="tag">场景：告警根因排查</span>
+    <span class="tag">落地：生产可部署</span>
+  </p>
+
+  <!-- ========== PART 1: 架构 ========== -->
+  <h2>一、可落地的网络运维 Agent 架构图</h2>
+  <p class="sub">以「SNMP 巡检 / 故障排查」为例，自上而下：触发 → 智能体核心 → 工具动作；两侧是知识记忆与可观测安全。</p>
+
+  <div class="arch">
+    <!-- 触发层 -->
+    <div class="band" style="background:var(--purple2);border-color:#AFA9EC">
+      <div class="bt">① 入口 / 触发层（谁喊它干活）</div>
+      <div class="chips">
+        <span class="chip">⏰ 定时任务 (cron / 调度)</span>
+        <span class="chip">🚨 告警 Webhook（网管 / Zabbix / Prometheus）</span>
+        <span class="chip">💬 对话入口（Web / IM 企业微信·飞书）</span>
+        <span class="chip">📋 工单系统触发</span>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- 中间三列 -->
+    <div class="mid">
+      <!-- 知识记忆 -->
+      <div class="col know">
+        <div class="bt" style="color:var(--green)">③ 知识 &amp; 记忆层</div>
+        <div class="chips" style="flex-direction:column">
+          <span class="chip">📚 向量库（设备手册 / 拓扑 / 配置基线）</span>
+          <span class="chip">🩺 历史故障经验库（RAG 检索）</span>
+          <span class="chip">🧠 短期对话记忆（本轮上下文）</span>
+          <span class="chip">📌 长期经验库（沉淀根因结论）</span>
+        </div>
+      </div>
+
+      <!-- 智能体核心 -->
+      <div class="col core">
+        <div class="bt" style="color:var(--blue)">② 智能体核心（Agent Core · LangGraph 状态机）</div>
+        <div class="mods">
+          <div class="mod"><b>规划 Planning</b>把目标拆成采集→比对→研判步骤</div>
+          <div class="mod"><b>记忆 Memory</b>读写知识层，维护执行状态</div>
+          <div class="mod"><b>工具路由 Tool Router</b>决定调用哪个工具 / API</div>
+          <div class="mod"><b>反思 Reflect</b>校验结果，失败则重试 / 换路</div>
+        </div>
+        <div class="llm">🤖 LLM 引擎：DeepSeek / Qwen / GLM（国内合规）或 Claude / GPT（能力优先），经 API 接入</div>
+      </div>
+
+      <!-- 可观测安全 -->
+      <div class="col guar">
+        <div class="bt" style="color:var(--red)">④ 可观测 &amp; 安全层</div>
+        <div class="chips" style="flex-direction:column">
+          <span class="chip">🔍 Tracing（Langfuse / LangSmith）</span>
+          <span class="chip">🛡 权限边界 + 沙箱（防越权 / 误操作）</span>
+          <span class="chip">✅ Human-in-the-loop（高风险动作人工确认）</span>
+          <span class="chip">📝 日志审计 + 防 Prompt 注入</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <!-- 工具动作层 -->
+    <div class="band" style="background:var(--amber2);border-color:#FAC775">
+      <div class="bt">⑤ 工具 / 动作层（它真正去执行的东西）</div>
+      <div class="chips">
+        <span class="chip">📡 SNMP 采集（get / walk / bulk · pysnmp）</span>
+        <span class="chip">🔌 网管 / 控制器 API（南向接口）</span>
+        <span class="chip">💻 CLI / SSH 执行（设备命令）</span>
+        <span class="chip">🐍 Python 脚本执行（自定义逻辑）</span>
+        <span class="chip">🔎 知识库检索（RAG）</span>
+        <span class="chip">🎫 工单 / 通知（企微 / 邮件）</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>关键设计点：</b>工具层通过 <b>MCP（Model Context Protocol）</b> 或 FastAPI 暴露为标准化 tool，Agent 核心只做「思考 + 路由」，不直接耦合设备协议——这样 SNMP、CLI、API 都能即插即用，也方便加沙箱和权限控制。高风险动作（如重启端口）必须走 human-in-the-loop 确认。
+  </div>
+
+  <!-- ========== PART 2: 技术选型 ========== -->
+  <h2>二、技术选型（按层推荐）</h2>
+  <table>
+    <tr><th style="width:18%">层 / 能力</th><th style="width:30%">推荐技术</th><th>说明与理由</th></tr>
+    <tr><td class="y">编排框架</td><td>LangGraph (Python)</td><td>细粒度状态机 + 循环控制，最适合 Agent；备选 <code>CrewAI</code>（多智能体）、<code>WorkBuddy</code>（低代码快速验证）</td></tr>
+    <tr><td class="y">大模型</td><td>DeepSeek / Qwen / GLM</td><td>国内合规、成本低；能力优先可选 Claude / GPT。统一走 API + 参数调优</td></tr>
+    <tr><td class="y">工具接入</td><td>MCP Server / FastAPI tool</td><td>把 SNMP、网管 API、CLI 封装成标准工具；MCP 是 2026 招聘高频词</td></tr>
+    <tr><td class="y">SNMP 采集</td><td>pysnmp + Python 封装</td><td>你本就熟悉 SNMP，封装成异步函数即可被 Agent 调用</td></tr>
+    <tr><td class="y">向量库</td><td>Chroma（起步）/ pgvector（已有 PG）/ Milvus（生产）</td><td>存设备手册、拓扑、历史故障，支撑 RAG</td></tr>
+    <tr><td class="y">RAG</td><td>LlamaIndex 或自写 pipeline</td><td>向量化 → 检索 → 重排序 → 拼上下文</td></tr>
+    <tr><td class="y">后端</td><td>FastAPI + asyncio</td><td>异步高并发，暴露 API / Webhook 入口</td></tr>
+    <tr><td class="y">可观测</td><td>Langfuse / LangSmith</td><td>轨迹追踪、成本统计、回归测试</td></tr>
+    <tr><td class="y">部署</td><td>Docker / K8s</td><td>容器化 + 限流 / 降级 / 容错</td></tr>
+    <tr><td class="y">AI 编码</td><td>Cursor / Claude Code</td><td>招聘明文要求，用于提效</td></tr>
+  </table>
+
+  <!-- ========== PART 3: 路线 ========== -->
+  <h2>三、3 个月转型路线（含每周任务）</h2>
+  <p class="sub">目标：月末能交付 <b>两个可演示项目</b>——「SNMP 自动巡检 Agent」+「告警根因排查 Agent」，并具备面试素材。</p>
+
+  <div class="month">
+    <div class="mhead"><span class="mbadge">第 1 月</span><span class="mgoal">打基础：L2 核心能力（Python 异步 / Prompt / RAG / 最小 Agent）</span></div>
+    <div class="wk"><div class="wn">W1</div><div class="wt"><b>Python 异步 + FastAPI 入门</b>；打通 LLM API 调用（DeepSeek/Qwen）、System Prompt、温度/Top-p 调参。<span class="pill p-learn">学</span></div></div>
+    <div class="wk"><div class="wn">W2</div><div class="wt"><b>Prompt Engineering 系统练</b>：结构化输出（JSON mode）、few-shot、控制幻觉、长上下文管理。<span class="pill p-learn">学</span></div></div>
+    <div class="wk"><div class="wn">W3</div><div class="wt"><b>RAG 全链路</b>：装 Chroma + Embedding，做「设备手册问答」小项目（检索→重排序→回答）。<span class="pill p-build">做</span></div></div>
+    <div class="wk"><div class="wn">W4</div><div class="wt"><b>最小 Agent</b>：用 LangGraph 实现 ReAct 循环（思考→工具→观察），先接一个假工具跑通闭环。<span class="pill p-build">做</span></div></div>
+  </div>
+
+  <div class="month">
+    <div class="mhead"><span class="mbadge">第 2 月</span><span class="mgoal">接工具：把你的 SNMP / 网管领域知识变成真实 Agent</span></div>
+    <div class="wk"><div class="wn">W5</div><div class="wt"><b>SNMP 协议实战</b>：pysnmp 封装 get/walk/bulk 为异步函数；熟悉 OID、MIB。<span class="pill p-learn">学</span></div></div>
+    <div class="wk"><div class="wn">W6</div><div class="wt"><b>Function Calling / MCP</b>：把 SNMP 工具 + 网管 API 封装成 MCP Server / tool schema，让 LLM 能正确选参调用。<span class="pill p-build">做</span></div></div>
+    <div class="wk"><div class="wn">W7</div><div class="wt"><b>巡检 Agent</b>：定时触发→批量采集→阈值比对→生成巡检报告（接企微/邮件）。<span class="pill p-build">做</span></div></div>
+    <div class="wk"><div class="wn">W8</div><div class="wt"><b>排查 Agent</b>：告警 Webhook→定位设备→调工具收集信息→输出根因假设 + 处置建议（高风险动作 human-in-the-loop）。<span class="pill p-build">做</span></div></div>
+  </div>
+
+  <div class="month">
+    <div class="mhead"><span class="mbadge">第 3 月</span><span class="mgoal">工程化 + 求职：稳定性、可观测、部署、作品集</span></div>
+    <div class="wk"><div class="wn">W9</div><div class="wt"><b>记忆与 RAG 进阶</b>：历史故障经验库、多轮对话状态、上下文压缩。<span class="pill p-learn">学</span></div></div>
+    <div class="wk"><div class="wn">W10</div><div class="wt"><b>可观测与安全</b>：接 Langfuse tracing、防 prompt 注入、权限/沙箱、人工确认机制。<span class="pill p-build">做</span></div></div>
+    <div class="wk"><div class="wn">W11</div><div class="wt"><b>部署上线</b>：Docker 容器化、单机/K8s 部署、CI/CD、限流/降级/容错。<span class="pill p-ship">上线</span></div></div>
+    <div class="wk"><div class="wn">W12</div><div class="wt"><b>收尾 + 简历</b>：两个项目写技术文档 + 架构图，放 GitHub；准备面试（evals / 系统设计 / 降本方案）。<span class="pill p-ship">求职</span></div></div>
+  </div>
+
+  <div class="note">
+    <b>给你的专属提示：</b>你的 SNMP / 网管 / OTN-SDN 背景是稀缺的「领域护城河」——JD 里明写「有特定行业业务知识优先」。前两周（Python 异步 / Prompt / RAG）对你是复习性质，可提速；把重心放在 <b>W5–W8 把领域知识转成工具</b> 上，这恰恰是普通转行者做不到的。每周务必产出「能跑的代码」并 commit 到 GitHub。
+  </div>
+
+  <footer>
+    交付物说明：本文件包含（1）网络运维 Agent 分层架构图；（2）按层技术选型表；（3）3 个月含每周任务的转型路线。
+    数据参考：2026 年 LinkedIn/Dice 行业报告及国内招聘站 AI Agent / LLM 工程师 JD 抽样。生成时间 2026-10-19。
+  </footer>
+
+</div>
+</body>
+</html>
