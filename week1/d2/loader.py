@@ -81,7 +81,7 @@ def setup_logger(level: int = logging.INFO, logfile: Path | None = LOG_FILE) -> 
     console.setFormatter(fmt)
     logger.addHandler(console)
     if logfile:
-        logfile.parent.mkdir(parents=True,exist_ok=True)
+        logfile.parent.mkdir(parents=True, exist_ok=True)
         fh = logging.FileHandler(logfile, encoding="utf-8")
         fh.setFormatter(fmt)
         logger.addHandler(fh)
@@ -189,8 +189,9 @@ def main() -> int:
     try:
         log = get_log()
     except NotImplementedError as exc:
+        # 这里不能写 log.error(...)：logger 正是在这一步失败的，此时 log 还没绑定。
+        # 一旦写上，就会变成 UnboundLocalError（和 D1 里 log.warning 那个坑同源）。
         sys.stderr.write(f"[TODO] {exc}\n       补完后重跑：python loader.py\n")
-        log.error("设备清单读取失败： %s", exc)
         return 3
 
     try:
@@ -198,15 +199,13 @@ def main() -> int:
         # 【已写好·示范】为什么用 %s 而不是 f-string：级别被过滤时不会白白拼字符串
         log.info("从 %s 加载 %d 台设备", Path(args.file).name, len(devices))
     except SnmpError as exc:
-        # print(f"[ERROR] {exc}")  # TODO(你·第1处)：改成 log.error(...)
-        log.error("设备清单读取失败： %s", exc)
+        log.error("设备清单读取失败：%s", exc)
         return 2
 
     picked = devices
     if args.device:
         picked = [d for d in devices if d.name == args.device]
         if not picked:
-            # print(f"[ERROR] 设备不存在：{args.device}")  # TODO(你·第2处)：改成 log.error(...)
             log.error("设备不存在：%s", args.device)
             return 2
 
