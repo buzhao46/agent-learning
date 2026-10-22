@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -99,7 +100,10 @@ def load_devices(path: Path = DEFAULT_FILE) -> list[Device]:
         raise SnmpError(f"配置文件不存在：{path}") from exc
     data = json.loads(text)
     if data["count"] != len(data["devices"]):
-        log.warning("设备数量不对")
+        # D1 还没有日志系统，这里只能先打到 stderr；D2 会把它换成 log.warning（带级别和时间）
+        sys.stderr.write(
+            f"[WARN] devices.json 里 count={data['count']}，实际 {len(data['devices'])} 台\n"
+        )
     return [Device.from_dict(raw) for raw in data["devices"]]
 
 
@@ -151,6 +155,7 @@ def main() -> int:
 
     print_table(picked)
     return 0
+
 
 
 if __name__ == "__main__":
