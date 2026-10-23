@@ -1,4 +1,4 @@
-from models import Device, load_devices, SnmpError
+from models import Device, load_devices, SnmpError, save_devices
 import json
 import pytest
 from pathlib import Path
@@ -23,6 +23,16 @@ def test_cpu_boundary() -> None:
     assert Device(name="a", ip="1.1.1.1", cpu=80).is_healthy() is False
     assert Device(name="a", ip="1.1.1.1", cpu=92).is_healthy() is False
 
+def test_cpu_below_limit() -> None:
+    assert Device(name="a", ip="1.1.1.1", cpu=30).is_healthy() is True
+
+def test_cpu_at_limit() -> None:
+    assert Device(name="a", ip="1.1.1.1", cpu=80).is_healthy() is False
+
+    
+def test_cpu_above_limit() -> None:
+    assert Device(name="a", ip="1.1.1.1", cpu=92).is_healthy() is False
+
 def test_invalid_status_raises() -> None:
     with pytest.raises(SnmpError):
         Device.from_dict({"name": "x", "ip": "1.1.1.1", "status": "up1c"})
@@ -39,3 +49,8 @@ def test_roundtrip_keeps_all_fields() -> None:
     assert back.cpu == src.cpu
     assert back.status == src.status
     # 剩下三个字段也要逐个断言 —— 这是重点
+
+def test_save_then_load(tmp_path) -> None:
+    out = tmp_path / "out" / "d.json"
+    save_devices([Device(name="n1", ip="2.2.2.2", cpu=10)], out)
+    assert load_devices(out)[0].ip == "2.2.2.2"
