@@ -45,14 +45,9 @@ def main() -> int:
     # 【已写好】先建 logger。你还没写 setup_logger 时，这里给一行提示而不是一屏堆栈。
     # 注意这里用的是 sys.stderr.write 而不是 print/log —— 日志系统此刻还不存在，
     # 这是唯一"还没法用日志"的地方，所以 C6 检查不会把它算成漏改的 print。
-    try:
-        level = logging.DEBUG if args.verbose else logging.INFO
-        log = get_log(level)
-    except NotImplementedError as exc:
-        # 这里不能写 log.error(...)：logger 正是在这一步失败的，此时 log 还没绑定。
-        # 一旦写上，就会变成 UnboundLocalError（和 D1 里 log.warning 那个坑同源）。
-        sys.stderr.write(f"[TODO] {exc}\n       补完后重跑：python loader.py\n")
-        return 3
+    
+    level = logging.DEBUG if args.verbose else logging.INFO
+    log = get_log(level)
 
     try:
         devices = load_devices(Path(args.file))
