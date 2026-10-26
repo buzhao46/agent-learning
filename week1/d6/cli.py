@@ -13,7 +13,7 @@ from pathlib import Path
 
 from log_setup import get_log
 from models import DEFAULT_FILE, load_devices, Device, SnmpError
-
+from probe import collect_all
 
 def print_table(devices: list[Device], elapsed: dict[str, float] | None = None) -> None:
     """【已写好 · 这个函数里的 print 不用改】
@@ -54,7 +54,11 @@ def main() -> int:
     parser.add_argument("--device", help="只看某台设备，例如 core-sw-01")
     parser.add_argument("--limit", type=int, help="只输出前N台设备")
     parser.add_argument("-v", "--verbose", action="store_true", help="打开DEBUG日志")
+    parser.add_argument("--attempts", type=int, default=3, help="单台设备最多尝试几次（含第一次）")
     args = parser.parse_args()
+    if args.attempts < 1:
+        parser.error(f"--attempts必须是 >=1 的整数，收到{args.attempts}")
+
     if args.limit is not None and args.limit < 1:
         parser.error(f"--limit必须是 >= 1 的整数，收到{args.limit}")
 
@@ -83,19 +87,11 @@ def main() -> int:
     for d in picked:
         log.debug("设备 %s: status=%s cpu=%s", d.name, d.status, d.cpu)
 
-    # ------------------------------------------------------------------
-    # 【你要改的就是这里】把下面这行换成「先采集、再打印」
-    #
-    # 需要做的四件事（README 第 3 步有完整说明）：
-    #   1. 上面 import 区加一行：from probe import collect_all
-    #   2. argparse 加 --attempts 参数（默认 3，type=int），并在 limit 校验旁边
-    #      加一句 attempts < 1 就 parser.error
-    #   3. 调 collect_all(picked, attempts=args.attempts) 拿到 list[ProbeResult]
-    #   4. 从 results 里还原出两个东西：设备列表、{设备名: 耗时} 字典，传给 print_table
-    #
-    # 进度预期：只写完 resilience.py 时 C1–C5 先绿，C6/C7 还红着；改完这里才会 7/7。
-    # ------------------------------------------------------------------
-    print_table(picked)  # 【已写好】报告输出，保留 print
+    results = collect_all(picked, attempts=args.attempts)
+    print_table(
+        [r.device for r in results],
+        {r.device.name: r.elapsed for r in results},
+    )
 
     log.info("巡检结束，共输出 %d 台", len(picked))  # 【已写好】
     return 0

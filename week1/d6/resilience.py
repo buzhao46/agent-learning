@@ -56,7 +56,8 @@ class Timer:
         为什么必须 return self：`with Timer() as t:` 里的 t 拿到的就是 __enter__ 的返回值。
         返回 None 的话，`t` 就是 None，后面 `t.elapsed` 直接 AttributeError。
         """
-        raise NotImplementedError("Timer.__enter__ 还没写")
+        self._start = time.perf_counter()
+        return self
 
     def __exit__(
         self,
@@ -80,7 +81,7 @@ class Timer:
 
         三个参数（exc_type / exc / tb）你暂时用不到，但签名里必须有，这是协议规定的。
         """
-        raise NotImplementedError("Timer.__exit__ 还没写")
+        self.elapsed = time.perf_counter() - self._start
 
 
 def retry_call(
@@ -134,4 +135,15 @@ def retry_call(
        （D6 这里为了简单统一重试所有 Exception。更严谨的做法是只重试网络类异常，
          认证失败重试 100 次也没用 —— 见 README 最后一节。）
     """
-    raise NotImplementedError("retry_call 还没写")
+    last: Exception | None = None
+    wait = delay
+    for i in range(attempts):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as exc:
+            last = exc
+            if i == attempts - 1:
+                break
+            time.sleep(wait)
+            wait *=backoff
+    raise last
