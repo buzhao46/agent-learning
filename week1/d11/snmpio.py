@@ -7,6 +7,8 @@
     health.py   负责「解回来的字符串能不能信」        ← 数据层（你今天写）
 """  # noqa: DOC001
 
+# pyright: reportMissingImports=false
+# pyright: reportAttributeAccessIssue=false
 from __future__ import annotations
 
 from pysnmp.hlapi import (

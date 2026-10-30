@@ -130,7 +130,7 @@ def build_health(host: str, raw: dict[str, str]) -> DeviceHealth:
 def probe_health(
     host: str,
     *,
-    community: str = "user1",
+    community: str = "public",
     port: int = 161,
     timeout: float = 1.0,
 ) -> DeviceHealth:
