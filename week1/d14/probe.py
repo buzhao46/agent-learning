@@ -57,6 +57,12 @@ from typing import Any
 logging.getLogger("asyncio").setLevel(logging.CRITICAL)
 warnings.filterwarnings("ignore", category=ResourceWarning)
 
+# Windows 默认用 ProactorEventLoop：pysnmp 6.x 的 asyncio transport 在解释器退出时，
+# 会因 loop 已关闭而报 "RuntimeError: Event loop is closed"（纯退出噪音，不影响采集）。
+# 改用 SelectorEventLoop 规避。
+if sys.platform == "win32" and hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 from pysnmp.hlapi import (
     CommunityData,
     ContextData,
