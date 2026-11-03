@@ -42,8 +42,19 @@ def write_json_atomic(path: Path, payload: dict) -> Path:
 
 
 def save_report(payload: dict, out_dir: str = "out") -> Path:
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    return write_json_atomic(Path(out_dir) / f"scan_{stamp}.json", payload)
+    # 秒级时间戳时，同一秒内的两次扫描会落到同一个文件名，后一次原子替换掉前一次
+    # —— 历史直接丢一份。D16 要做趋势，历史不能被覆盖。
+    #
+    # 光加毫秒还不够：Windows 的系统时钟粒度约 15.6ms，连续两次调用完全可能拿到
+    # 同一个毫秒。所以再兜一层「名字已被占用就加序号」，保证最终路径唯一。
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:-3]
+    out = Path(out_dir)
+    path = out / f"scan_{stamp}.json"
+    seq = 1
+    while path.exists():
+        path = out / f"scan_{stamp}-{seq:03d}.json"
+        seq += 1
+    return write_json_atomic(path, payload)
 
 
 def load_last_report(out_dir: str = "out") -> dict | None:

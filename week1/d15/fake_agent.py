@@ -407,12 +407,13 @@ def serve(host: str, port: int, community: str) -> None:
 
 def main() -> int:
     global NAME, BAD_UPTIME, MISS_STATUS, LOOP_BUG, MANY_PORTS
-    global TOO_BIG, GEN_ERR, NO_SUCH_NAME
+    global TOO_BIG, GEN_ERR, NO_SUCH_NAME, UPTIME_TICKS
     parser = argparse.ArgumentParser(description="最小 SNMPv2c 应答器（假设备，支持 WALK 和错误码）")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=1161)
     parser.add_argument("--community", default="public")
     parser.add_argument("--name", default=NAME)
+    parser.add_argument("--uptime", type=int, default=UPTIME_TICKS, help="sysUpTime ticks（1/100 秒），用于模拟重启")
     parser.add_argument("--uptime-bad", action="store_true", help="sysUpTime 回 N/A（脏值）")
     parser.add_argument("--miss-status", action="store_true", help="ifIndex=3 缺 ifOperStatus")
     parser.add_argument("--loop", action="store_true", help="GETNEXT 表末尾原地打转")
@@ -422,6 +423,7 @@ def main() -> int:
     parser.add_argument("--no-such-name", action="store_true", help="sysName 回 noSuchName(2)")
     args = parser.parse_args()
     NAME = args.name
+    UPTIME_TICKS = args.uptime
     BAD_UPTIME = args.uptime_bad
     MISS_STATUS = args.miss_status
     LOOP_BUG = args.loop

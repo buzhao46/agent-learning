@@ -103,6 +103,11 @@ class CollectionResult:
     host: str
     values: dict[str, Any] = field(default_factory=dict)
     failures: list[Failure] = field(default_factory=list)
+    # sysUpTime 的原始 ticks（1/100 秒）。单独开字段而不是塞进 values：
+    # total 是 len(values) + len(failures)，往 values 里加键会让「N/total 项成功」
+    # 从 4/4 变 5/5，也会让报告里的 values 混进一个非采集项。
+    # 展示仍然用格式化字符串，趋势分析（D16）用这个数值。
+    uptime_ticks: int | None = None
 
     @property
     def total(self) -> int:
@@ -360,8 +365,12 @@ def render(result: CollectionResult) -> None:
 
 
 def load_devices(path: str) -> list[dict]:
-    """读 devices.json，返回设备清单。字段缺省用 .get 兜底。"""
-    with open(path, encoding="utf-8") as f:
+    """读 devices.json，返回设备清单。字段缺省用 .get 兜底。
+
+    用 utf-8-sig 读：Windows 记事本 / PowerShell 5.1 的 Set-Content 都会加 BOM，
+    带 BOM 的文件用 utf-8 读会直接 JSONDecodeError（第 1 个字符就挂）。
+    """
+    with open(path, encoding="utf-8-sig") as f:
         data = json.load(f)
     return data.get("devices", [])
 
@@ -377,9 +386,10 @@ def scan_one(args) -> int:
     raw_uptime = result.values.get("uptime")
     if raw_uptime is not None:
         try:
-            result.values["uptime"] = fmt_ticks(int(raw_uptime))
+            result.uptime_ticks = int(raw_uptime)
+            result.values["uptime"] = fmt_ticks(result.uptime_ticks)
         except (TypeError, ValueError):
-            pass
+            pass  # --uptime-bad 回的 "N/A"，留 None，趋势分析按「缺值」处理
     render(result)
     return result.exit_code
 
@@ -445,7 +455,8 @@ def scan_config(path: str, *, workers: int = 16, report_dir: str = "out", increm
         raw = r.values.get("uptime")
         if raw is not None:
             try:
-                r.values["uptime"] = fmt_ticks(int(raw))
+                r.uptime_ticks = int(raw)          # 先留原始 ticks，落盘给趋势分析用
+                r.values["uptime"] = fmt_ticks(r.uptime_ticks)
             except (TypeError, ValueError):
                 pass
         render(r)
@@ -501,6 +512,7 @@ def result_to_dict(result: CollectionResult) -> dict:
         "host": result.host,
         "verdict": result.verdict,
         "exit_code": result.exit_code,
+        "uptime_ticks": result.uptime_ticks,
         "values": {k: _json_value(v) for k, v in result.values.items()},
         "failures": [
             {
