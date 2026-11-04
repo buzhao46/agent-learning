@@ -31,3 +31,6 @@ Thumbs.db
 # 工具/IDE 本地计划文件
 .codebuddy/
 _check_devices.json
+
+# 嵌套 out 目录（按天建的子目录）
+**/out/
