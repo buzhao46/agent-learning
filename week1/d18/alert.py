@@ -42,6 +42,7 @@ from alerts import (
 from history import build_trends
 from notify import send
 import acktoken
+import roster
 from state import enqueue, load_groups, load_state, save_state
 
 
@@ -64,12 +65,13 @@ def build_digest(events: list, state: dict, args, now: datetime, kind: str) -> d
     """
     is_escalate = kind == EVENT_ESC_DIGEST
     stamp = now.isoformat(timespec="seconds")
+    on_duty_person = roster.on_duty(args.roster, now, args.shift) if args.roster else None
     items: list[dict] = []
     for ev in events:
         dev = state.get("devices", {}).get(ev.label, {})
         item = {
             "device": ev.label,
-            "ack_url": ack_url_for(EVENT_OPEN, ev.label, args),
+            "ack_url": ack_url_for(EVENT_OPEN, ev.label, args, now),
             "reason": ev.reason,
         }
         if is_escalate:
@@ -87,14 +89,20 @@ def build_digest(events: list, state: dict, args, now: datetime, kind: str) -> d
             item["waited_minutes"] = round(waited) if waited is not None else None
         items.append(item)
 
+    if is_escalate:
+        reason = f"本轮升级 {len(items)} 台（已聚合，避免刷屏）"
+        if on_duty_person:
+            reason += f"；@值班人 {on_duty_person}"
+    else:
+        reason = f"本轮新增 {len(items)} 台"
+
     return {
         "id": f"{kind}:digest:{stamp}",
         "kind": kind,
         "device": "digest",
         "old_status": None,
         "new_status": "ALERT",
-        "reason": f"本轮{'升级' if is_escalate else '新增'} {len(items)} 台"
-                  + ("（已聚合，避免刷屏）" if is_escalate else ""),
+        "reason": reason,
         "created_at": stamp,
         "items": items,
         "suppressed": False,
@@ -227,13 +235,18 @@ def dispatch(event: dict, args, silences: list[dict], now: datetime) -> tuple[bo
     return True, True
 
 
-def ack_url_for(kind: str, label: str, args) -> str | None:
-    """给一条事件算确认链接。没配 --ack-base-url 就不带链接。"""
+def ack_url_for(kind: str, label: str, args, now: datetime) -> str | None:
+    """给一条事件算确认链接。没配 --ack-base-url 就不带链接。
+
+    D21：若配了排班表（--roster）并能查到当前值班人，则把 by= 预填进链接，
+    点链接的人默认就是当班人，不用手填。by= 不参与签名（只是「谁点的」的预填）。
+    """
     if not args.ack_base_url:
         return None
+    by = roster.on_duty(args.roster, now, args.shift) if args.roster else None
     if kind == EVENT_GROUP:
-        return acktoken.group_ack_url(args.ack_base_url, label, args.ack_secret)
-    return acktoken.device_ack_url(args.ack_base_url, label, args.ack_secret)
+        return acktoken.group_ack_url(args.ack_base_url, label, args.ack_secret, by=by)
+    return acktoken.device_ack_url(args.ack_base_url, label, args.ack_secret, by=by)
 
 
 def main() -> int:
@@ -256,6 +269,8 @@ def main() -> int:
     parser.add_argument("--escalate-webhook", help="升级事件的目标 URL")
     parser.add_argument("--ack-base-url", help="确认链接基地址，如 http://host:8731（D19 闭环）")
     parser.add_argument("--ack-secret", default=acktoken.DEFAULT_SECRET, help="ack 链接签名密钥")
+    parser.add_argument("--roster", help="值班排班表 JSON（D21）：日期+班次→值班人，默认填到 ack 链接 by=")
+    parser.add_argument("--shift", help="强制指定班次（day/night），不传则按当前小时推断")
     parser.add_argument("--digest-threshold", type=int, default=2, help="同轮同类型事件≥N 条才聚成摘要（默认 2）")
     parser.add_argument("--no-digest", action="store_true", help="关闭摘要聚合，每条事件单独发")
     parser.add_argument("--dry-run", action="store_true", help="只算不写：不改状态、不发通知")
@@ -336,7 +351,7 @@ def main() -> int:
     # 4. 先补发上次没送出去的（按事件 kind 选渠道）
     remaining = []
     for event in state.get("pending", []):
-        url = ack_url_for(event.get("kind", ""), event.get("device", ""), args)
+        url = ack_url_for(event.get("kind", ""), event.get("device", ""), args, now)
         if url:
             event["ack_url"] = url
         channel, webhook = channel_for(event.get("kind", ""), args)
@@ -390,7 +405,7 @@ def main() -> int:
         if payload.get("kind") in (EVENT_DIGEST, EVENT_ESC_DIGEST):
             url = None  # 摘要里每条 items 自带 ack_url，顶层不再加
         else:
-            url = ack_url_for(payload.get("kind", ""), payload.get("device", ""), args)
+            url = ack_url_for(payload.get("kind", ""), payload.get("device", ""), args, now)
         if url:
             payload["ack_url"] = url
         need_queue, failed = dispatch(payload, args, silences, now)

@@ -40,15 +40,21 @@ def verify_group(secret: str, group: str, sig: str | None) -> bool:
     return hmac.compare_digest(sign_group(secret, group), sig)
 
 
-def device_ack_url(base_url: str, label: str, secret: str) -> str:
-    return (
+def device_ack_url(base_url: str, label: str, secret: str, by: str | None = None) -> str:
+    url = (
         f"{base_url.rstrip('/')}/ack"
         f"?device={urllib.parse.quote(label)}&sig={sign_device(secret, label)}"
     )
+    if by:
+        url += f"&by={urllib.parse.quote(str(by))}"
+    return url
 
 
-def group_ack_url(base_url: str, group: str, secret: str) -> str:
-    return (
+def group_ack_url(base_url: str, group: str, secret: str, by: str | None = None) -> str:
+    url = (
         f"{base_url.rstrip('/')}/ack"
         f"?group={urllib.parse.quote(group)}&sig={sign_group(secret, group)}"
     )
+    if by:
+        url += f"&by={urllib.parse.quote(str(by))}"
+    return url
