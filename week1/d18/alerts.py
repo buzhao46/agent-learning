@@ -26,6 +26,8 @@ EVENT_STALE = "stale"
 EVENT_ACK = "alert_ack"
 EVENT_ESCALATE = "alert_escalate"
 EVENT_GROUP = "group_alert"
+EVENT_DIGEST = "alert_digest"
+EVENT_ESC_DIGEST = "escalate_digest"
 
 ST_OK = "OK"
 ST_ALERT = "ALERT"

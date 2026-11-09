@@ -27,7 +27,9 @@ from datetime import datetime
 from pathlib import Path
 
 from alerts import (
+    EVENT_DIGEST,
     EVENT_ESCALATE,
+    EVENT_ESC_DIGEST,
     EVENT_GROUP,
     EVENT_OPEN,
     Event,
@@ -44,10 +46,60 @@ from state import enqueue, load_groups, load_state, save_state
 
 
 def channel_for(kind: str, args) -> tuple[str, str | None]:
-    """升级事件与组告警走升级渠道，其余走普通渠道。"""
-    if kind in (EVENT_ESCALATE, EVENT_GROUP):
+    """升级事件、组告警、升级摘要走升级渠道，其余（含新告警摘要）走普通渠道。"""
+    if kind in (EVENT_ESCALATE, EVENT_GROUP, EVENT_ESC_DIGEST):
         return args.escalate_channel, args.escalate_webhook
     return args.channel, args.webhook
+
+
+def build_digest(events: list, state: dict, args, now: datetime, kind: str) -> dict:
+    """把同一轮的一批同类型事件聚成一条摘要。
+
+    kind == EVENT_DIGEST   本轮新增的 alert_open 批量（散装故障，没进组收敛的）
+    kind == EVENT_ESC_DIGEST  本轮升级事件批量
+
+    每条 items 带各自的确认链接；摘要只发一条，省掉「20 台同挂 → 20 条消息」。
+    组收敛（group_alert）是另一回事：它基于拓扑、只管已知组；digest 基于「同一轮」、
+    管任意一批同时发生的告警，两者互补，不冲突。
+    """
+    is_escalate = kind == EVENT_ESC_DIGEST
+    stamp = now.isoformat(timespec="seconds")
+    items: list[dict] = []
+    for ev in events:
+        dev = state.get("devices", {}).get(ev.label, {})
+        item = {
+            "device": ev.label,
+            "ack_url": ack_url_for(EVENT_OPEN, ev.label, args),
+            "reason": ev.reason,
+        }
+        if is_escalate:
+            item["level"] = int(dev.get("escalation_level", 0) or 0)
+            since = dev.get("since")
+            waited = None
+            if since:
+                try:
+                    moment = datetime.fromisoformat(str(since))
+                    if moment.tzinfo is not None:
+                        moment = moment.astimezone().replace(tzinfo=None)
+                    waited = (now - moment).total_seconds() / 60
+                except (TypeError, ValueError):
+                    waited = None
+            item["waited_minutes"] = round(waited) if waited is not None else None
+        items.append(item)
+
+    return {
+        "id": f"{kind}:digest:{stamp}",
+        "kind": kind,
+        "device": "digest",
+        "old_status": None,
+        "new_status": "ALERT",
+        "reason": f"本轮{'升级' if is_escalate else '新增'} {len(items)} 台"
+                  + ("（已聚合，避免刷屏）" if is_escalate else ""),
+        "created_at": stamp,
+        "items": items,
+        "suppressed": False,
+        "attempts": 0,
+    }
 
 
 def load_silences(path: str | None, silence_until: str | None) -> list[dict]:
@@ -204,6 +256,8 @@ def main() -> int:
     parser.add_argument("--escalate-webhook", help="升级事件的目标 URL")
     parser.add_argument("--ack-base-url", help="确认链接基地址，如 http://host:8731（D19 闭环）")
     parser.add_argument("--ack-secret", default=acktoken.DEFAULT_SECRET, help="ack 链接签名密钥")
+    parser.add_argument("--digest-threshold", type=int, default=2, help="同轮同类型事件≥N 条才聚成摘要（默认 2）")
+    parser.add_argument("--no-digest", action="store_true", help="关闭摘要聚合，每条事件单独发")
     parser.add_argument("--dry-run", action="store_true", help="只算不写：不改状态、不发通知")
     args = parser.parse_args()
 
@@ -296,10 +350,47 @@ def main() -> int:
             print(f"[补发失败] {event.get('id')} → {message}")
     state["pending"] = remaining
 
-    # 5. 新事件：静默过滤后发送，发不出去的进 outbox
-    for event in all_events:
-        payload = event.to_dict()
-        url = ack_url_for(event.kind, event.label, args)
+    # 5. 新事件：先按「同轮同类型」聚合成摘要（降噪），再静默过滤后发送
+    opens = [ev for ev in all_events if ev.kind == EVENT_OPEN]
+    escalations = [ev for ev in all_events if ev.kind == EVENT_ESCALATE]
+    others = [ev for ev in all_events if ev.kind not in (EVENT_OPEN, EVENT_ESCALATE)]
+
+    # 静默的处理保留在 dispatch 里（会打印 [静默] 且不发、不入队）。
+    # 这里只把「未静默」的同类型事件挑出来聚合成摘要；被静默的事件仍单独走 dispatch，
+    # 既保证 [静默] 提示不丢，又保证摘要里不会出现被静默的设备。
+    active_opens: list = []
+    active_escalations: list = []
+    to_send: list = list(others)
+    for ev in opens:
+        silenced, _ = is_silenced(ev.label, now, silences)
+        if silenced:
+            to_send.append(ev)  # 走 dispatch：打印 [静默]，不发、不入队
+        else:
+            active_opens.append(ev)
+    for ev in escalations:
+        silenced, _ = is_silenced(ev.label, now, silences)
+        if silenced:
+            to_send.append(ev)
+        else:
+            active_escalations.append(ev)
+
+    if not args.no_digest and len(active_opens) >= args.digest_threshold:
+        to_send.append(build_digest(active_opens, state, args, now, EVENT_DIGEST))
+        print(f"  [聚合] {len(active_opens)} 条新告警 → 1 条摘要（阈值 {args.digest_threshold}）")
+    else:
+        to_send.extend(active_opens)
+    if not args.no_digest and len(active_escalations) >= args.digest_threshold:
+        to_send.append(build_digest(active_escalations, state, args, now, EVENT_ESC_DIGEST))
+        print(f"  [聚合] {len(active_escalations)} 条升级 → 1 条升级摘要（阈值 {args.digest_threshold}）")
+    else:
+        to_send.extend(active_escalations)
+
+    for event in to_send:
+        payload = event.to_dict() if isinstance(event, Event) else event
+        if payload.get("kind") in (EVENT_DIGEST, EVENT_ESC_DIGEST):
+            url = None  # 摘要里每条 items 自带 ack_url，顶层不再加
+        else:
+            url = ack_url_for(payload.get("kind", ""), payload.get("device", ""), args)
         if url:
             payload["ack_url"] = url
         need_queue, failed = dispatch(payload, args, silences, now)
