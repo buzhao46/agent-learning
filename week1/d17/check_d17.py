@@ -45,6 +45,8 @@ def make_env() -> dict[str, str]:
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUTF8"] = "1"
     env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+    if "COVERAGE_PROCESS_START" in os.environ:
+        env["COVERAGE_PROCESS_START"] = os.environ["COVERAGE_PROCESS_START"]
     return env
 
 

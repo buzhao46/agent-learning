@@ -35,6 +35,9 @@ def make_env() -> dict[str, str]:
     e["PYTHONIOENCODING"] = "utf-8"
     e["PYTHONUTF8"] = "1"
     e["PYTHONPATH"] = str(ROOT) + os.pathsep + e.get("PYTHONPATH", "")
+    # 让 coverage 能追踪子进程（coverage run 时透传 COVERAGE_PROCESS_START）
+    if "COVERAGE_PROCESS_START" in os.environ:
+        e["COVERAGE_PROCESS_START"] = os.environ["COVERAGE_PROCESS_START"]
     return e
 
 

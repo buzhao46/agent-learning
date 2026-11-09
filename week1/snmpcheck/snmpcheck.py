@@ -20,8 +20,12 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
+import os
+import subprocess
 import sys
+import time
 from pathlib import Path
 
 from .log_setup import get_log
@@ -153,6 +157,77 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agent(args: argparse.Namespace) -> int:
+    """③ `agent` 子命令：真 pysnmp 采集 + LLM 决策 + 自然语言解读。
+
+    默认在本地拉起若干 fake_agent（模拟 SNMP 设备）作为采集目标；
+    传 --config 则改读真实设备清单 JSON，不再起模拟设备。
+    无 LLM_API_KEY 时决策与解读都走 RulePolicy 规则兜底，仍能完整跑通。
+    """
+    log = get_log()
+    from .agent import run_agent
+
+    FAKE_NAMES = ["core-sw-01", "agg-sw-03", "core-rtr-02", "acc-sw-04", "dist-sw-05"]
+
+    def spawn_fake_agents() -> list[subprocess.Popen[bytes]]:
+        week1 = Path(__file__).resolve().parent.parent
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(week1) + os.pathsep + env.get("PYTHONPATH", "")
+        procs: list[subprocess.Popen[bytes]] = []
+        for i, port in enumerate(args.ports):
+            name = FAKE_NAMES[i] if i < len(FAKE_NAMES) else f"auto-sw-{i:02d}"
+            proc = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-m",
+                    "snmpcheck.fake_agent",
+                    "--port",
+                    str(port),
+                    "--name",
+                    name,
+                    "--community",
+                    args.community,
+                ],
+                cwd=str(week1),
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            procs.append(proc)
+            log.info("已启动模拟设备 %s @ 127.0.0.1:%d (pid=%d)", name, port, proc.pid)
+        time.sleep(0.6)  # 等 UDP 监听就绪，避免首包丢失
+        return procs
+
+    def kill_fake_agents(procs: list[subprocess.Popen[bytes]]) -> None:
+        for p in procs:
+            try:
+                p.terminate()
+            except Exception:  # noqa: BLE001
+                pass
+
+    if args.config:
+        devices = json.loads(Path(args.config).read_text(encoding="utf-8"))
+        procs: list[subprocess.Popen[bytes]] = []
+        log.info("使用真实设备清单 %s（%d 台），不起模拟设备", args.config, len(devices))
+    else:
+        procs = spawn_fake_agents()
+        devices = [
+            {
+                "name": FAKE_NAMES[i] if i < len(FAKE_NAMES) else f"auto-sw-{i:02d}",
+                "host": args.host,
+                "port": p,
+                "community": args.community,
+            }
+            for i, p in enumerate(args.ports)
+        ]
+
+    try:
+        run_agent(args.task, devices, max_steps=args.max_steps, verbose=not args.quiet)
+    finally:
+        kill_fake_agents(procs)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """搭出带 list / status 两个子命令的解析器。"""
     parser = argparse.ArgumentParser(prog=PROG, description="设备巡检工具：先确认配置，再采一遍")
@@ -172,6 +247,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_status.add_argument("-v", "--verbose", action="store_true", help="打开DEBUG日志")
     p_status.set_defaults(func=cmd_status)
+
+    p_agent = sub.add_parser("agent", help="LLM Agent：真采集 + 决策 + 自然语言诊断")
+    p_agent.add_argument(
+        "--ports", type=int, nargs="+", default=[1161],
+        help="模拟设备端口（默认 1161；多台如 1161 1162 1163）",
+    )
+    p_agent.add_argument("--host", default="127.0.0.1", help="模拟设备地址")
+    p_agent.add_argument("--community", default="public", help="SNMP community 字符串")
+    p_agent.add_argument("--timeout", type=float, default=1.0, help="单 OID 超时（秒）")
+    p_agent.add_argument("--max-steps", type=int, default=12, help="ReAct 最大步数")
+    p_agent.add_argument(
+        "--task", default="巡检所有设备，找出异常并给出处理建议。"
+    )
+    p_agent.add_argument(
+        "--config", help="真实设备清单 JSON（含 name/host/port/community），传了就不起模拟设备"
+    )
+    p_agent.add_argument("-q", "--quiet", action="store_true", help="只输出最终诊断")
+    p_agent.set_defaults(func=cmd_agent)
 
     return parser
 
