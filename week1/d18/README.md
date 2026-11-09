@@ -1,279 +1,205 @@
-# D18 · 告警收敛与升级：别让 20 台同时掉线刷爆手机
+# D19 · ack 闭环与告警生命周期看板
 
-**今天一句话**：D17 让「同一条告警只发一次」了，但没解决两件事——20 台一起掉线还是 20 条通知；告警发出来半小时没人理，也不会自动找第二个人。今天加 **ack（确认）**、**escalation（升级）** 和 **correlation（同组批量故障收敛成一条）**。
+**今天一句话**：D18 让告警能收敛、能升级、能确认了——但确认还得登机器跑 `ack.py`。今天补上「最后一公里」：**通知里带一条签过名的确认链接，运维在手机上点一下就确认**；再加一张**告警生命周期看板**，把 `state["devices"]` 里的 `since / acknowledged / escalation_level` 渲染成「谁在处理、升到第几级、卡了多久」的总览。
 
-预计 50–70 分钟。在 D17 的 `alerts.py` / `state.py` / `alert.py` 上扩展，新增 `ack.py` 和 `groups.json`，不改既有接口语义。
+预计 40–60 分钟。在 D18 的 `alert.py / ack.py / notify.py / state.py` 上扩展，新增 `acktoken.py`、`ack_server.py`、`board.py`、`check_d19.py`。不改 D18 的语义，只加「链接」和「看板」两条旁路。
 
 ---
 
 ## 一、今天的目录
 
-从 D17 复制（D17 的代码已经在 `week1/d17/`，状态机、outbox、静默都落地了）：
-
-```powershell
-cd F:\workbuddy_workspace\2026-10-19-10-49-35\week1
-New-Item -ItemType Directory d18
-Copy-Item d17\*.py,d17\*.json d18\
-```
+D19 直接在 D18 目录里加文件（D18 是已落地的快照，不需要再复制）：
 
 ```
 week1/d18/
-├── probe.py / report.py / history.py / trend.py   ← 原样搬
-├── state.py        ← 扩展：state["devices"][label] 加 ack/escalation 字段，新增 state["groups"]
-├── alerts.py       ← 扩展：新增 maybe_escalate()、AlertState 加字段、GroupState
-├── notify.py       ← 基本不动，alert.py 按 kind 选渠道即可
-├── alert.py        ← 扩展：主流程加「扫描超时升级」+「组收敛」两步
-├── ack.py          ← 新增：人工确认告警的 CLI
-├── groups.json     ← 新增：拓扑分组（机房/网段 → 设备清单）
-├── fake_agent.py / devices.json / check_d12..d17.py
-└── README.md       ← 这份
+├── alert.py          ← 扩展：--ack-base-url / --ack-secret，发送时给事件注入确认链接
+├── ack.py            ← 扩展：把「算目标 / 写确认」抽成 resolve_targets / apply_ack
+├── notify.py         ← 扩展：console 打印确认链接，file/webhook 把 ack_url 写进 JSON
+├── state.py          ← 不动（D18 已带 groups / ack / escalation 字段）
+├── alerts.py         ← 不动
+├── acktoken.py       ← 新增：ack 链接的 HMAC 签名 / 校验（无第三方依赖）
+├── ack_server.py     ← 新增：HTTP 闭环服务（/ack 确认 + / 看板）
+├── board.py          ← 新增：告警生命周期看板（CLI + 供 server 渲染网页）
+├── groups.json       ← 沿用 D18
+└── check_d19.py      ← 新增：C1–C8 共 8 个用例
 ```
 
-两个刻意选择（和 D15→D17 一致）：
+两个刻意选择（和 D15→D19 一脉相承）：
 
-- **不复制 `d17/README.md`**。D18 会改 `state.py` 的字段结构，复制过去的文档立刻过时。
-- **不复制 `out/`**。含验收临时目录；历史状态不该跨天继承。
+- **不把 ack 逻辑塞进状态机**。`ack_server` 回写状态时，只调 D18 已有的 `apply_ack`（改 `acknowledged`），`step` 依旧不碰 ack 字段。确认是「人为动作」，状态跃迁是「自动逻辑」，两条线不能混。
+- **看板只读不写**。看板只是把现状讲清楚，不碰状态文件；写权限仍在 `alert.py` / `ack.py` / `ack_server`。
 
-复制完先验基线——**D17 的代码原样搬过来，逻辑没动，`check_d17.py` 应直接 9/9**：
+---
+
+## 二、先看 D18 缺什么
+
+三个开口，都能在 D18 代码里指到：
+
+1. **ack 还停在生产力的上个世纪**。`ack.py` 是 CLI，运维得 SSH 上机器、找 `state` 路径、敲 `--device`。告警发到手机了，确认还得回工位——这段链路断了，D18 的 ack 等于没真正闭环。
+2. **没有「确认入口」这种东西**。`alerts.Event.to_dict()` 只有 `kind/device/reason/...`，没有「怎么确认」的线索。运维收到通知，除了回机器什么也做不了。
+3. **没有总览**。D17 画过一张「状态机状态表」，但那是给开发者看的跃迁图；运维要的是**此刻**「哪几台还红着、谁认领了、升到第几级、卡了多久」——`state["devices"]` 里有数据（`since/acknowledged/escalation_level`），但没有人把它变成一屏能看完的表。
+
+一句话：**D18 让告警「能被确认」，D19 让告警「点一下就确认」且「一眼看清现状」**。
+
+---
+
+## 三、TODO 1：ack 链接签名（acktoken.py）
+
+链接会被发到聊天 / 邮件里，谁都能点。不签名的话，任何人都能随便确认任意告警，甚至写脚本批量确认、把真实故障全「消音」。所以链接必须带签名：
+
+```python
+# acktoken.py
+def sign_device(secret, label) -> str:          # HMAC-SHA256(secret, label) 取前 32 位 hex
+def sign_group(secret, group) -> str:           # 独立命名空间：HMAC(secret, "group:" + group)
+def verify_device(secret, label, sig) -> bool:  # compare_digest 防时序攻击
+def verify_group(secret, group, sig) -> bool:
+def device_ack_url(base_url, label, secret) -> str:  # base/ack?device=<label>&sig=<sig>
+def group_ack_url(base_url, group, secret) -> str:   # base/ack?group=<group>&sig=<sig>
+```
+
+**为什么 device / group 用两个独立命名空间**：一条 `group` 链接确认整组，权限比 `device` 大。如果共用一个签名函数，拿到某台设备的 sig 就能伪造组链接。命名空间隔离后，`sign_device` 的 sig 验不过 `verify_group`。
+
+**服务端无状态**：链接自己携带 `device + sig`，服务端不存表，靠同一密钥复算比对。换密钥 = 让所有旧链接失效，运维友好。
+
+`secret` 默认是 `change-me-in-prod` 并会打印警告；生产必须 `--ack-secret`。
+
+---
+
+## 四、TODO 2：通知内嵌确认链接（notify.py + alert.py）
+
+`alert.py` 发送每条事件前，按 kind 算链接并注入 `ack_url`：
+
+```python
+def ack_url_for(kind, label, args):
+    if not args.ack_base_url:
+        return None
+    if kind == EVENT_GROUP:
+        return acktoken.group_ack_url(args.ack_base_url, label, args.ack_secret)
+    return acktoken.device_ack_url(args.ack_base_url, label, args.ack_secret)
+
+# 新事件循环里：
+payload = event.to_dict()
+url = ack_url_for(event.kind, event.label, args)
+if url:
+    payload["ack_url"] = url
+```
+
+`notify.py` 的改动极小：
+
+- `console` 渠道：除了打印通知，多打一行 `确认：<url>`；
+- `file` / `webhook` 渠道：`payload` 已经是完整 dict，`json.dumps` 天然带上 `ack_url`。
+
+`alert.py` 加参数：`--ack-base-url`（如 `http://host:8731`）、`--ack-secret`。**补发 pending 时也重新算链接**，保证重发出来的通知照样可点。
+
+---
+
+## 五、TODO 3：ack 逻辑抽出来（ack.py）
+
+D18 的 `ack.py` 把「解析目标 + 写确认 + 存盘」全写在 `main` 里。D19 把它拆成两个纯函数，CLI 和 `ack_server` 共用：
+
+```python
+def resolve_targets(state, groups_path, device, group) -> set[str]:
+    """--device 单台，或 --group 展开成组内所有 label。"""
+
+def apply_ack(state, targets, by, note, now) -> int:
+    """对 targets 里仍是 ALERT 的设备写 acknowledged，返回确认了几台。直接改 state。"""
+```
+
+`ack_server` 的 `/ack` 处理直接调这两个：解析 → 校验签名 → `apply_ack` → `save_state`。`ack.py` 的 CLI 不变，还是 `python ack.py --device ... --by alice`。
+
+---
+
+## 六、TODO 4：闭环 HTTP 服务（ack_server.py）
+
+一个 `ThreadingHTTPServer`，无框架、无额外依赖：
 
 ```powershell
-cd d18
-..\.venv\Scripts\python.exe check_d17.py     # 9/9
+python ack_server.py --state out/alert_state.json --groups groups.json \
+    --host 0.0.0.0 --port 8731 --secret my-secret
 ```
 
-如果这里不是 9/9，说明复制漏了文件或 `.venv` 不在 d18 的父目录，先修好再往下。
+路由：
+
+| 路径 | 作用 |
+|---|---|
+| `GET /` | 看板网页（复用 `board.render_html`） |
+| `GET /api/board` | 看板 JSON |
+| `GET /ack?device=X&sig=S&by=Y` | 校验签名 → `apply_ack` 写回 → 显示「已确认」 |
+| `GET /ack?group=G&sig=S&by=Y` | 同上，但确认整组 |
+
+安全边界（写进代码注释）：**本服务只开放「确认」，不开放「取消确认 / 改状态」**。确认是不可逆的人为动作，不允许通过链接反向操作——否则有人点一下就把别人的 ack 撤了，更乱。
+
+点链接的完整链路：
+
+```
+alert.py 发通知 ──带 ack_url──> 聊天/邮件 ──运维点击──> ack_server /ack
+        └── 校验签名 ──> apply_ack 写 acknowledged=True ──> 下次 alert.py 跑，该设备不再升级
+```
 
 ---
 
-## 二、先看 D17 缺什么
+## 七、TODO 5：告警生命周期看板（board.py）
 
-四个开口，都能在 D17 代码里指到：
+纯读 `state`（`collect`），不写。一张表讲清「现在谁在处理」：
 
-1. **幂等只解决了「重复 open」，没解决「总量炸」**。D17 的 `step` 保证同一台设备 ALERT 只发一条 `alert_open`。但 20 台同时掉线 = 20 条 `alert_open`，每条只发一次，可 20 条还是 20 条。运维的手机照样炸。
-2. **没有 ack**。运维在别的系统看到、确认了「我知道了」，但 D17 的状态里没处记。`state["devices"][label]` 只有 `status/since/stale/consecutive_*`，没有「是否已被确认」。下次巡检照常跑，恢复前一切如常——只是没人能标记「在处理了」。
-3. **没有 escalation（升级）**。`alert.py` 五步流程里没有「过了 N 分钟还没 ack 就找第二个人」这一步。告警发了等于发了，石沉大海没人知道。
-4. **没有拓扑**。`step` 只认 `host:port`，不知道「这 20 台属于同一个机房、共享一条上游链路」。要做收敛，得先有「谁和谁是一伙的」。
+| 维度 | 字段 | 说明 |
+|---|---|---|
+| 设备行 | `since → 持续时长` | `状态开了多久`，>1h 标 `X.Xh`，否则 `Xm` |
+| 设备行 | `acknowledged / acked_by` | 谁认领了，没认领标「未确认」 |
+| 设备行 | `escalation_level` | 升到第几级（L1/L2），没升标 `-` |
+| 设备行 | `group` | 所属组（来自 groups.json 逆索引） |
+| 组行 | `alerted / total` | 组内几台红着，占比 |
+| 汇总 | `alerts / acked / unacked / escalated / groups_alerting` | 一屏看完的 KPI |
 
-一句话：**D17 管住了「一条告警发几次」，D18 管「告警该找谁、该不该合并」。**
+两种输出：`python board.py --state ... --groups ...` 打印文本表；`--html` 打印网页；`--json` 给程序消费（server 的 `/api/board` 用的就是它）。
 
----
-
-## 三、TODO 1：拓扑分组（groups）
-
-告警策略不该和采集配置（`devices.json`）绑死——采集加一台机器，不代表告警就要为它单独建组。所以**独立一个 `groups.json`**，解耦。
-
-```json
-{
-  "groups": [
-    { "name": "机房A",  "members": ["10.0.0.9:161", "10.0.0.10:161", "10.0.0.11:161"] },
-    { "name": "机房B",  "members": ["10.0.0.20:161", "10.0.0.21:161"] }
-  ]
-}
-```
-
-`alert.py` 启动时读它，建一张 `label -> group_name` 的逆索引。`members` 里没列出的设备算「无组」，不参与收敛，但**仍然各自正常告警**——收敛是「有组才合并」，不是「有组才通知」。
-
-**坑**：`label` 是 `"10.0.0.9:161"`，组文件里写 `"10.0.0.9:161"` 还是 `"10.0.0.9"` 必须统一。建议组文件里就写完整 `host:port`，和状态 key 完全一致，省一层映射。
+**只显示 ALERT**：看板是「当前故障总览」，OK / UNKNOWN 不进表。组也只看 `status == ALERT` 的。组恢复后自动退出组行，但组内仍坏的设备**保留设备行**——和 D18「收敛抑制通知、不抑制状态」一脉相承。
 
 ---
 
-## 四、TODO 2：状态机加 ack / escalation 字段
+## 八、TODO 6：验收（check_d19.py）
 
-在 `state.py` 的 `empty_state` 基础上，单设备状态扩成：
-
-```python
-# state["devices"][label] = {
-#   "status": "ALERT", "since": "...", "stale": false,
-#   "consecutive_bad": 3, "consecutive_ok": 0, "last_seen": "...", "last_notified_at": "...",
-#   "acknowledged": False, "acked_by": None, "acked_at": None,
-#   "escalation_level": 0, "last_escalated_at": None,
-# }
-```
-
-`alerts.py` 里 `step()` **只尊重这些字段，不修改它们**（原因见第七节偏离声明）。具体：
-
-- 进入 ALERT（`alert_open`）时：`acknowledged=False`、`escalation_level=0`、`acked_by/acked_at=None`。
-- 恢复 OK（`alert_close`）时：把 `acknowledged / acked_by / acked_at / escalation_level / last_escalated_at` 全部清零——设备修好了，确认记录没有保留意义。
-- 已是 ALERT 且 `acknowledged=True`：保持状态，但**升级扫描会跳过它**（见 TODO 4）。
-
-新增一个**独立的纯函数** `maybe_escalate`，不塞进 `step`：
-
-```python
-def maybe_escalate(prev: dict, *, escalate_after: int, max_level: int, now: datetime
-                    ) -> tuple[dict, Event | None]:
-    """返回 (可能更新的状态, escalate 事件或 None)。纯函数，不读盘不发通知。"""
-    if prev.get("status") != "ALERT" or prev.get("acknowledged"):
-        return prev, None
-    level = int(prev.get("escalation_level", 0))
-    waited = (now - datetime.fromisoformat(prev["since"])).total_seconds() / 60
-    threshold = escalate_after * (2 ** level)   # 窗口翻倍：L0→等 escalate_after，L1→再等 2×，L2→再等 4×
-    if level < max_level and waited >= threshold:
-        new_state = {**prev, "escalation_level": level + 1,
-                     "last_escalated_at": now.isoformat(timespec="seconds")}
-        event = Event("alert_escalate", prev_label(prev), "ALERT", "ALERT",
-                      f"未确认告警升级至 L{level + 1}（已等待 {waited:.0f} 分钟）",
-                      now.isoformat(timespec="seconds"))
-        return new_state, event
-    return prev, None
-```
-
-`Event.kind` 取值新增：`"alert_ack"`、`"alert_escalate"`、`"group_alert"`（`Event.to_dict` 不用改）。
-
-**为什么升级窗口翻倍**：一条告警等了 30 分钟没人理，说明第一级的人没看到；再等 30 分钟还升级一次就够烦了，再等 30 分钟又升级一次就是骚扰。翻倍（30 / 60 / 120）既给机会处理，又不刷屏。
-
----
-
-## 五、TODO 3：ack 接口（ack.py）
-
-人工确认是**外部动作**，不该在 `step` 里自动发生。单独一个 CLI：
-
-```powershell
-python ack.py --state out/alert_state.json --device 10.0.0.9:161 --by alice --note "在排了"
-python ack.py --state out/alert_state.json --group 机房A --by bob        # 批量确认整组
-```
-
-`ack.py` 逻辑（直接复用 `state.py` 的 `load_state/save_state`）：
-
-```python
-state, _ = load_state(args.state, now=now)
-targets = resolve_targets(state, args)   # --device 单台，或 --group 展开成组内所有 label
-for label in targets:
-    dev = state["devices"].get(label)
-    if dev and dev.get("status") == "ALERT":
-        dev["acknowledged"] = True
-        dev["acked_by"] = args.by
-        dev["acked_at"] = now.isoformat(timespec="seconds")
-save_state(state, args.state, now=now)
-# 可选：把 alert_ack 事件进 pending，下次 notify 发一条「已确认」
-```
-
-退出码：`0` 成功，`2` 状态文件损坏（按 `load_state` 的降级行为，损坏时其实会初始化成空状态——**这点要小心**：ack 一个不存在的状态文件，不该创建空文件然后说成功。所以 `ack.py` 里先判断文件是否存在，不存在直接报 `2`）。
-
-**坑**：ack 一个已经 `stale` 的设备没意义——它根本没数据了，确认什么？`ack.py` 对 `stale` 设备给个警告但不阻止（语义上允许「我知道它失联了」），但不发 `alert_ack` 通知，避免误导。
-
----
-
-## 六、TODO 4：升级（加进 alert.py 主流程）
-
-D17 `alert.py` 是五步：读状态 → 算趋势 → 补发 pending → 过状态机 → 写回。D18 在**第三步之后、第四步之前**插一步「扫描超时升级」：
-
-```python
-# 3.5 升级扫描：对每台 ALERT 且未 ack 的设备，检查是否该升级
-for label, dev in state["devices"].items():
-    new_dev, event = maybe_escalate(dev, escalate_after=args.escalate_after,
-                                    max_level=args.max_level, now=now)
-    state["devices"][label] = new_dev
-    if event is not None:
-        escalation_events.append(event)
-```
-
-升级事件要和「新状态跃迁事件」一起进第四步的发送通道，但**走升级渠道**：
-
-```python
-def channel_for(kind: str, args) -> tuple[str, str | None]:
-    if kind in ("alert_escalate", "group_alert"):
-        return args.escalate_channel, args.escalate_webhook
-    return args.channel, args.webhook
-```
-
-`alert.py` 加参数：`--escalate-after`（默认 30 分钟）、`--max-level`（默认 2）、`--escalate-channel`（默认 webhook）、`--escalate-webhook`。
-
-**幂等天然成立**：`maybe_escalate` 一旦把 `escalation_level` 加了 1，下次再扫描 `threshold` 翻倍，不会重复发同级。即使 `alert.py` 中途崩溃、状态已写回，重跑也只会产生下一级（如果又超时了），不会重复 L1。
-
----
-
-## 七、TODO 5：收敛（correlation）
-
-20 台一起掉线，理想是 1 条「机房 A 上游故障」，不是 20 条。在**第四步（发送）之前**做组聚合：
-
-```python
-def correlate(events, state, groups, threshold):
-    # 1. 统计每个组当前 ALERT 数 / 组内总数
-    group_stats = {}
-    for g in groups["groups"]:
-        members = set(g["members"])
-        alerted = [m for m in members if state["devices"].get(m, {}).get("status") == "ALERT"]
-        group_stats[g["name"]] = (len(alerted), len(members))
-
-    final_events = []
-    for ev in events:
-        gname = label_to_group.get(ev.label)
-        if gname and group_stats[gname][0] / group_stats[gname][1] >= threshold:
-            if ev.kind == "alert_open":          # 单设备 open 被收敛，不单独发
-                ev.suppressed = True
-                ev.reason = f"已收敛到组告警（{gname}）"
-                continue
-        final_events.append(ev)
-
-    # 2. 对每个越过阈值的组，生成/复用一条 group_alert
-    for g in groups["groups"]:
-        n_alert, n_total = group_stats[g["name"]]
-        gstate = state["groups"].setdefault(g["name"], {"status": "OK", "since": None})
-        if n_total and n_alert / n_total >= threshold:
-            if gstate["status"] != "ALERT":
-                gstate["status"] = "ALERT"
-                gstate["since"] = now.isoformat(timespec="seconds")
-                final_events.append(Event("group_alert", g["name"], "OK", "ALERT",
-                                  f"{g['name']}：{n_alert}/{n_total} 设备不可达，疑似上游故障", stamp))
-        else:
-            if gstate["status"] == "ALERT":
-                final_events.append(Event("group_alert", g["name"], "ALERT", "OK",
-                                  f"{g['name']} 故障恢复，剩 {n_alert}/{n_total} 台异常", stamp))
-            gstate["status"] = "OK"
-    return final_events, state
-```
-
-`state["groups"]` 是 D18 新增的顶层键，结构 `{组名: {status, since}}`，和 `state["devices"]` 平级。
-
-**三个偏离声明（和 D17 把 stale 拆布尔字段同一思路，都是「别把正交的事塞进一个状态」）：**
-
-1. **group 状态不写进单设备 state**。设备各自仍是 ALERT（事实不丢），只是通知被收敛。`group_alert` 和单设备 `alert_open` 是两套事实，存两个地方才不会互相干扰。
-2. **ack 只能由 `ack.py` 和 `close` 修改，`step` 不碰它**。`step` 的职责是「状态跃迁」，确认是运维的人为动作；混进去会让「自动重新 open」把别人的 ack 悄悄清掉。
-3. **收敛抑制的是「通知」，不是「状态」**。被 `suppressed` 的单设备事件仍然进了 `pending`（或不进，但状态照常 ALERT），将来退出收敛（组恢复）时，如果个别设备还坏着，会重新按单设备发——而不是「组好了就全当好了」。
-
----
-
-## 八、TODO 6：验收（check_d18.py）
-
-直接构造 `scan_*.json`，不启 SNMP（和 D17 验收同一手法，时间戳用「现在 - N 分钟」，升级判定才确定）。覆盖：
+直接构造 `scan_*.json`（和 D17/D18 同一手法，时间戳用「现在 - N 分钟」），外加**真起一个 HTTP 服务**发请求，不走 mock：
 
 | 项 | 查什么 |
 |---|---|
-| C1 | ack 后 `maybe_escalate` 返回 None：确认的设备不再产生 escalate |
-| C2 | 未 ack、等待 ≥ `escalate_after` → 产生 1 条 `alert_escalate`，且 level 只 +1（重复跑不刷屏） |
-| C3 | 同组 15/20 同时掉线 → 只有 1 条 `group_alert`，单设备 `alert_open` 被 `suppressed` |
-| C4 | 组恢复到 5/20（<阈值）→ 发 `group_alert` 恢复明细，组状态清回 OK |
-| C5 | 升级到 `max_level` 后不再升级（上限生效） |
-| C6 | `ack.py --device` 标记后，状态文件 `acknowledged=True` 且持久；`--group` 批量展开正确 |
-| C7 | 组状态与单设备状态解耦：组恢复不把组内仍 ALERT 的设备误标 OK |
-| C8 | 回归：D17 的 B1–B9 仍全过（升级/收敛不改既有语义） |
+| C1 | ack 链接签名：合法可验、伪造 / 换密钥 / 空签名均拒；device/group 命名空间隔离 |
+| C2 | 通知内嵌确认链接：`alert_open` 的 `ack_url` 含 `/ack?device=` |
+| C3 | 看板渲染 ALERT 设备：持续时长 / 确认人 / 升级级别 / 组 齐全 |
+| C4 | 闭环端到端：`alert` 发链接 → 点链接（真实 HTTP）→ 状态 `acknowledged=True` |
+| C5 | 伪造签名点链接：服务端 403，状态不被改动 |
+| C6 | 组确认链接：一次点完组内 3 台 |
+| C7 | 看板反映组状态：组 ALERT 进组行；组恢复后退出组行但保留仍坏设备行 |
+| C8 | 回归：D18（8/8）+ D17（9/9） |
 
 ```powershell
-..\.venv\Scripts\python.exe check_d18.py     # 通过 8/8
+..\.venv\Scripts\python.exe check_d19.py     # 通过 8/8
+..\.venv\Scripts\python.exe check_d18.py     # 仍 8/8（回归）
 ..\.venv\Scripts\python.exe check_d17.py     # 仍 9/9（回归）
 ```
 
 ---
 
-## 九、自检（端到端，真机）
+## 九、自检（端到端，真机 + 真服务）
 
 ```powershell
-# 起 1 台假设备，采一次正常的
+# 1. 起假设备，采一次正常的
 ..\.venv\Scripts\python.exe fake_agent.py --port 1161
 ..\.venv\Scripts\python.exe probe.py --config devices.json --report-dir out
 
-# 停掉假设备，连采 3 次（设备进 ALERT）
-# 再往 groups.json 里把这台和另外 19 台放进「机房A」
-..\.venv\Scripts\python.exe alert.py --report-dir out --state out/alert_state.json --channel file
+# 2. 停掉假设备，连采 3 次（设备进 ALERT）
+# 3. 起闭环服务
+..\.venv\Scripts\python.exe ack_server.py --state out/alert_state.json --groups groups.json --port 8731 --secret x
 
-# 预期：20 台里若 ≥12 台 ALERT → 只 1 条 group_alert 进 alerts.log，单设备 open 被抑制
-# 等 escalate_after 分钟（或把报告时间戳改旧）再跑一次 → 1 条 alert_escalate（升级渠道）
-# 人工确认：
-..\.venv\Scripts\python.exe ack.py --state out/alert_state.json --group 机房A --by alice
-# 再跑 alert.py → 不再产生 escalate（C1 验证）
+# 4. 跑告警（带确认链接）
+..\.venv\Scripts\python.exe alert.py --report-dir out --state out/alert_state.json --channel file \
+    --ack-base-url http://127.0.0.1:8731 --ack-secret x
+
+# 5. 浏览器打开 http://127.0.0.1:8731/ 看看板；点通知里的确认链接 → 状态被确认
+# 6. 再跑一次 alert.py → 已确认的设备不再升级
 ```
 
-注意 `out/alerts.log` 是 UTF-8，Windows 控制台默认 GBK 会乱码，用 `Get-Content -Encoding utf8` 看。
+注意 `out/alerts.log` 是 UTF-8，Windows 控制台默认 GBK 会乱码，用 `Get-Content -Encoding utf8` 看；确认链接里的中文组名已经 `urllib.parse.quote` 过，不会有编码问题。
 
 ---
 
@@ -281,25 +207,27 @@ def correlate(events, state, groups, threshold):
 
 | 现象 | 原因 | 改法 |
 |---|---|---|
-| 升级刷屏 | `escalation_level` 没写回 state | `maybe_escalate` 返回新状态，alert.py 必须接住并写回 |
-| ack 后又被升级 | `step` 重 open 时清了 ack | `step` 不碰 ack 字段，只有 `ack.py` 和 `close` 改 |
-| 组恢复把坏设备标 OK | 收敛逻辑误改单设备状态 | 收敛只动 `state["groups"]`，不碰 `state["devices"]` |
-| 20 条变 1 条但恢复后失联设备消失 | suppressed 事件没保留状态 | 抑制的是通知，设备状态仍各自 ALERT |
-| ack 空状态文件却成功 | `load_state` 降级成空状态 | `ack.py` 先判文件存在，不存在直接 `2` |
-| 组名和 label 对不上 | 组文件写 `10.0.0.9` 而非 `10.0.0.9:161` | 组文件统一用完整 `host:port` |
-| 升级窗口太密 | 固定间隔 | 用翻倍窗口（30/60/120），给处理机会又不骚扰 |
-| C8 回归挂 | 改了 `step` 签名 | `step` 只加字段不改签名语义，验收先跑 D17 |
+| 点链接 403 | 服务端 `--secret` 和发链接时的 `--ack-secret` 不一致 | 两端用同一个密钥；测试里抽成常量 `SECRET` |
+| 组告警 / 升级事件没进日志 | 它们走 `--escalate-channel`（默认 webhook），没给 URL 就进 pending | 验收时显式 `--escalate-channel file`，真实环境配 webhook |
+| 链接中文组名乱码 | 没 quote | `acktoken` 用 `urllib.parse.quote` 编码 label/group |
+| 伪造链接能消音 | 没签名 | 链接必须带 HMAC sig，服务端 `compare_digest` 校验 |
+| 取消确认也能点 | 服务开放了写反向字段 | 服务只开放「确认」一条路径 |
+| 看板把恢复的设备也算进去 | 组恢复后没清组状态 | 收敛逻辑（D18）已经把组状态清回 OK，看板据此退出组行 |
 
 ---
 
 ## 十一、今天记住的三条
 
-1. **ack 是人为动作，`step` 不碰它**。状态跃迁和人工确认是两个正交事实，混在一起会出现「自动重开悄悄清掉别人的确认」。
-2. **收敛抑制通知、不抑制状态**。设备各自还是 ALERT，组告警只是「少发一条」，不是「当成没坏」。
-3. **升级要翻倍窗口 + 上限**。一条告警等 30 分钟没人理说明第一级没看到，再等 30 分钟还升一级就够了，死等固定间隔只会刷屏。
+1. **确认是不可逆的人为动作，链接只负责「确认」**。状态跃迁（自动）和人工确认（人为）是两条正交线，闭环服务不碰 `step`、不开放反向写。
+2. **签名把「谁能用链接消音」锁死**。没密钥造不出合法 sig，换密钥让所有旧链接失效——这是把 ack 暴露到公网前的必做项。
+3. **看板只读不写，和状态机解耦**。看板只是把 `since / acknowledged / escalation_level` 翻成能一眼看完的表，写权限仍在 `alert.py` / `ack.py` / `ack_server`。
 
 ---
 
-## 十二、D19 预告
+## 十二、D20 预告
 
-告警能收敛、能升级、能确认了。下一步是**闭环**：通知里带一个 ack 链接（webhook 收到后回写 `ack.py`），让运维在手机上点一下就确认，不用再登机器跑 CLI；以及**告警生命周期看板**——把 `state["devices"]` 里 `since / acknowledged / escalation_level` 渲染成一张当前告警总览表（谁在处理、升到第几级、卡了多久），这正是 D17 那张「状态机状态表」该长成的样子。
+告警能收敛、能升级、能点链接确认、能看总览了。下一步往「降噪 + 闭环深化」走：
+
+- **通知聚合**：同一条告警在 L1→L2 之间别反复发相同内容，升级事件带「已等待 X 分钟 + 之前通知过」的上下文；
+- **值班排班**：ack 链接的 `by=` 默认填当前值班人（接排班表），不用每人手动写名字；
+- **历史时间线**：把 `state["devices"]` 的 `since / last_escalated_at / acked_at` 画成单设备的告警生命周期折线，复盘「这台机器这个月炸了几次、每次卡多久才有人管」。

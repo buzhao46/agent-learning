@@ -30,6 +30,9 @@ def send(
     """发一条事件，返回 (成功?, 说明)。失败只返回，不抛。"""
     if channel == "console":
         print(f"[通知] {event.get('kind', '?'):<11} {event.get('device', '?'):<20} {event.get('reason', '')}")
+        ack_url = event.get("ack_url")
+        if ack_url:
+            print(f"        确认：{ack_url}")
         return True, "console"
 
     if channel == "file":

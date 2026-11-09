@@ -39,6 +39,7 @@ from alerts import (
 )
 from history import build_trends
 from notify import send
+import acktoken
 from state import enqueue, load_groups, load_state, save_state
 
 
@@ -174,6 +175,15 @@ def dispatch(event: dict, args, silences: list[dict], now: datetime) -> tuple[bo
     return True, True
 
 
+def ack_url_for(kind: str, label: str, args) -> str | None:
+    """给一条事件算确认链接。没配 --ack-base-url 就不带链接。"""
+    if not args.ack_base_url:
+        return None
+    if kind == EVENT_GROUP:
+        return acktoken.group_ack_url(args.ack_base_url, label, args.ack_secret)
+    return acktoken.device_ack_url(args.ack_base_url, label, args.ack_secret)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="D18：告警状态机（含升级与收敛）")
     parser.add_argument("--report-dir", default="out", help="scan_*.json 所在目录")
@@ -192,6 +202,8 @@ def main() -> int:
     parser.add_argument("--max-level", type=int, default=2, help="升级最高级别")
     parser.add_argument("--escalate-channel", default="webhook", choices=["console", "file", "webhook"])
     parser.add_argument("--escalate-webhook", help="升级事件的目标 URL")
+    parser.add_argument("--ack-base-url", help="确认链接基地址，如 http://host:8731（D19 闭环）")
+    parser.add_argument("--ack-secret", default=acktoken.DEFAULT_SECRET, help="ack 链接签名密钥")
     parser.add_argument("--dry-run", action="store_true", help="只算不写：不改状态、不发通知")
     args = parser.parse_args()
 
@@ -270,6 +282,9 @@ def main() -> int:
     # 4. 先补发上次没送出去的（按事件 kind 选渠道）
     remaining = []
     for event in state.get("pending", []):
+        url = ack_url_for(event.get("kind", ""), event.get("device", ""), args)
+        if url:
+            event["ack_url"] = url
         channel, webhook = channel_for(event.get("kind", ""), args)
         ok, message = send(event, channel=channel, webhook=webhook, log_path=args.log)
         if ok:
@@ -284,6 +299,9 @@ def main() -> int:
     # 5. 新事件：静默过滤后发送，发不出去的进 outbox
     for event in all_events:
         payload = event.to_dict()
+        url = ack_url_for(event.kind, event.label, args)
+        if url:
+            payload["ack_url"] = url
         need_queue, failed = dispatch(payload, args, silences, now)
         if need_queue:
             enqueue(state, payload)
