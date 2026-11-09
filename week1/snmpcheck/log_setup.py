@@ -1,4 +1,5 @@
 """日志配置：谁来 import 都拿到同一个logger，且只在第一次真正使用时才建 handler."""
+
 from __future__ import annotations
 
 import logging
@@ -7,6 +8,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 LOG_FILE = HERE / "out" / "run.log"
+
 
 def setup_logger(level: int = logging.INFO, logfile: Path | None = LOG_FILE) -> logging.Logger:
     """建一个日志器：控制台一份+文件一份。
@@ -45,7 +47,7 @@ def setup_logger(level: int = logging.INFO, logfile: Path | None = LOG_FILE) -> 
         return logger
 
     logger.setLevel(level)
-    fmt = logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",  "%H:%M:%S")
+    fmt = logging.Formatter("%(asctime)s | %(levelname)-8s | %(name)s | %(message)s", "%H:%M:%S")
     console = logging.StreamHandler(sys.stderr)
     console.setFormatter(fmt)
     logger.addHandler(console)
@@ -57,6 +59,7 @@ def setup_logger(level: int = logging.INFO, logfile: Path | None = LOG_FILE) -> 
         logger.addHandler(fh)
 
     return logger
+
 
 _LOG: logging.Logger | None = None
 

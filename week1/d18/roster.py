@@ -41,7 +41,7 @@ def load_roster(path: str | None) -> list[dict]:
     elif isinstance(data, list):
         rows = data
     else:
-        print("[警告] 排班表应是 {\"roster\": [...]} 或数组，已忽略")
+        print('[警告] 排班表应是 {"roster": [...]} 或数组，已忽略')
         return []
     return [r for r in rows if isinstance(r, dict)]
 

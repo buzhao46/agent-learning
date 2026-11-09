@@ -46,16 +46,18 @@ def collect(state: dict, groups: dict, now: datetime) -> tuple[list[dict], list[
     for label, dev in sorted(state.get("devices", {}).items()):
         if not isinstance(dev, dict) or dev.get("status") != "ALERT":
             continue
-        device_rows.append({
-            "label": label,
-            "since": dev.get("since"),
-            "age": _age_text(dev.get("since"), now),
-            "stale": bool(dev.get("stale")),
-            "acknowledged": bool(dev.get("acknowledged")),
-            "acked_by": dev.get("acked_by") or "-",
-            "escalation_level": int(dev.get("escalation_level", 0) or 0),
-            "group": label_to_group.get(label, "-"),
-        })
+        device_rows.append(
+            {
+                "label": label,
+                "since": dev.get("since"),
+                "age": _age_text(dev.get("since"), now),
+                "stale": bool(dev.get("stale")),
+                "acknowledged": bool(dev.get("acknowledged")),
+                "acked_by": dev.get("acked_by") or "-",
+                "escalation_level": int(dev.get("escalation_level", 0) or 0),
+                "group": label_to_group.get(label, "-"),
+            }
+        )
 
     group_rows: list[dict] = []
     for g in groups.get("groups", []):
@@ -65,17 +67,18 @@ def collect(state: dict, groups: dict, now: datetime) -> tuple[list[dict], list[
             continue
         members = set(g.get("members", []))
         alerted = sum(
-            1 for m in members
-            if state.get("devices", {}).get(m, {}).get("status") == "ALERT"
+            1 for m in members if state.get("devices", {}).get(m, {}).get("status") == "ALERT"
         )
-        group_rows.append({
-            "name": name,
-            "since": gstate.get("since"),
-            "age": _age_text(gstate.get("since"), now),
-            "alerted": alerted,
-            "total": len(members),
-            "ratio": (alerted / len(members)) if members else 0.0,
-        })
+        group_rows.append(
+            {
+                "name": name,
+                "since": gstate.get("since"),
+                "age": _age_text(gstate.get("since"), now),
+                "alerted": alerted,
+                "total": len(members),
+                "ratio": (alerted / len(members)) if members else 0.0,
+            }
+        )
 
     acked = sum(1 for r in device_rows if r["acknowledged"])
     escalated = sum(1 for r in device_rows if r["escalation_level"] > 0)
@@ -139,7 +142,9 @@ def render_html(device_rows: list[dict], group_rows: list[dict], summary: dict) 
             )
         parts.append("</table>")
     parts.append("<h2>设备</h2><table border='1' cellpadding='4'>")
-    parts.append("<tr><th>设备</th><th>持续</th><th>级别</th><th>确认人</th><th>组</th><th>失联</th></tr>")
+    parts.append(
+        "<tr><th>设备</th><th>持续</th><th>级别</th><th>确认人</th><th>组</th><th>失联</th></tr>"
+    )
     for r in device_rows:
         lvl = f"L{r['escalation_level']}" if r["escalation_level"] else "-"
         ack = r["acked_by"] if r["acknowledged"] else "未确认"
@@ -165,8 +170,13 @@ def main() -> int:
     device_rows, group_rows, summary = collect(state, groups, now)
 
     if args.json:
-        print(json.dumps({"devices": device_rows, "groups": group_rows, "summary": summary},
-                         ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {"devices": device_rows, "groups": group_rows, "summary": summary},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     elif args.html:
         print(render_html(device_rows, group_rows, summary))
     else:

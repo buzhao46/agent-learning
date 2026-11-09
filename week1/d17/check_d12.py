@@ -35,8 +35,7 @@ VENV_PY = ROOT.parent / ".venv" / "Scripts" / "python.exe"
 
 # 一条真实的 SNMPv2c GET sysDescr 报文（真包），用来独立探活
 PING_PACKET = bytes.fromhex(
-    "302802010104067075626c6963a01b020344e2a8"
-    "020100020100300e300c06082b060102010101000500"
+    "302802010104067075626c6963a01b020344e2a8020100020100300e300c06082b060102010101000500"
 )
 
 STAGES = ("sysDescr", "uptime", "sysName", "ifTable")
@@ -269,7 +268,10 @@ def check_c3(ports: dict[str, int]) -> tuple[bool, str]:
             "分类里不该有 auth 这一类。",
         )
     if not value["detail"]:
-        return False, "Failure.detail 是空的 —— 报告里只有「timeout」四个字母，看不出是哪台设备哪个 OID"
+        return (
+            False,
+            "Failure.detail 是空的 —— 报告里只有「timeout」四个字母，看不出是哪台设备哪个 OID",
+        )
     if float(value["elapsed"]) > 2.2:
         return (
             False,
@@ -417,7 +419,9 @@ CHECKS = [
 
 def ready() -> tuple[bool, str]:
     missing = [
-        n for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py") if not (ROOT / n).exists()
+        n
+        for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py")
+        if not (ROOT / n).exists()
     ]
     if missing:
         return False, f"缺文件：{', '.join(missing)}"
@@ -463,9 +467,7 @@ def main() -> int:
         ]
         alive = {name: wait_agent(port) for name, port in ports.items()}
         all_alive = all(alive.values())
-        table = "　".join(
-            f"{name} {ports[name]}{'' if alive[name] else ' [!]'}" for name in ports
-        )
+        table = "　".join(f"{name} {ports[name]}{'' if alive[name] else ' [!]'}" for name in ports)
         print("假设备：" + table)
 
     passed = required_failed = optional_failed = 0

@@ -14,7 +14,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 STATUS_ALERT = "ALERT"
@@ -155,7 +155,9 @@ def analyze(items: list[tuple[str, dict]]) -> Trend:
 
     if points:
         trend.uptime_ticks = points[-1]
-        trend.restarted = any(later < earlier for earlier, later in zip(points, points[1:]))
+        trend.restarted = any(
+            later < earlier for earlier, later in zip(points, points[1:], strict=False)
+        )
         if not trend.restarted and len(points) >= 2:
             trend.uptime_delta = points[-1] - points[0]
 
@@ -167,7 +169,7 @@ def analyze(items: list[tuple[str, dict]]) -> Trend:
     if counts:
         trend.if_count = counts[-1]
         trend.if_count_changes = sum(
-            1 for earlier, later in zip(counts, counts[1:]) if earlier != later
+            1 for earlier, later in zip(counts, counts[1:], strict=False) if earlier != later
         )
 
     return trend
@@ -204,7 +206,7 @@ def decide(trend: Trend, threshold: int = 3) -> tuple[str, str]:
 def build_trends(
     report_dir: str,
     threshold: int = 3,
-) -> tuple[list[Trend], dict[tuple[str, int], list[dict]]]:
+) -> tuple[list[Trend], dict]:
     """读目录 → 归组 → 每台设备算一条 Trend（含判定）。"""
     reports = load_reports(report_dir)
     groups = group_by_device(reports)

@@ -9,6 +9,7 @@ B5  单台模式（--port）行为不变
 说明：本脚本验证的是 D15 的目标（report.py + probe.py 的 --report-dir / --incremental）。
 若只复制了代码、尚未实现上述功能，B1-B4 会失败，这是预期结果。
 """
+
 from __future__ import annotations
 
 import json
@@ -26,8 +27,7 @@ ENTRY = ROOT / "probe.py"
 VENV_PY = ROOT.parent / ".venv" / "Scripts" / "python.exe"
 
 PING_PACKET = bytes.fromhex(
-    "302802010104067075626c6963a01b020344e2a8"
-    "020100020100300e300c06082b060102010101000500"
+    "302802010104067075626c6963a01b020344e2a8020100020100300e300c06082b060102010101000500"
 )
 
 # 所有临时产物都放在 out/ 下（out/ 已在 .gitignore，不会被误提交）。
@@ -112,7 +112,9 @@ def run_probe(*args: str, timeout: float = 90) -> subprocess.CompletedProcess[st
 
 def write_devices(path: Path, devices: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"devices": devices}, ensure_ascii=False, indent=2), encoding="utf-8")
+    path.write_text(
+        json.dumps({"devices": devices}, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
 
 def latest_report(directory: Path) -> tuple[Path | None, dict | None]:
@@ -185,8 +187,10 @@ def check_incremental(ports: dict[str, int]) -> tuple[bool, str]:
         return False, "上一份报告没有非 OK 设备，无法验证增量"
 
     proc = run_probe(
-        "--config", str(DEVICES_PATH),
-        "--report-dir", str(REPORT_DIR),
+        "--config",
+        str(DEVICES_PATH),
+        "--report-dir",
+        str(REPORT_DIR),
         "--incremental",
     )
     out = (proc.stdout or "") + (proc.stderr or "")
@@ -207,16 +211,24 @@ def check_incremental(ports: dict[str, int]) -> tuple[bool, str]:
 
 
 def check_incremental_all_ok(ports: dict[str, int]) -> tuple[bool, str]:
-    write_devices(DEVICES_OK_PATH, [
-        {"host": "127.0.0.1", "port": ports["normal"], "community": "public", "timeout": 0.5},
-    ])
+    write_devices(
+        DEVICES_OK_PATH,
+        [
+            {"host": "127.0.0.1", "port": ports["normal"], "community": "public", "timeout": 0.5},
+        ],
+    )
     first = run_probe("--config", str(DEVICES_OK_PATH), "--report-dir", str(REPORT_DIR_OK))
     if first.returncode != 0:
-        return False, f"全 OK 全量扫描退出码应 0，实际 {first.returncode}\n{tail(first.stdout + first.stderr)}"
+        return (
+            False,
+            f"全 OK 全量扫描退出码应 0，实际 {first.returncode}\n{tail(first.stdout + first.stderr)}",
+        )
 
     second = run_probe(
-        "--config", str(DEVICES_OK_PATH),
-        "--report-dir", str(REPORT_DIR_OK),
+        "--config",
+        str(DEVICES_OK_PATH),
+        "--report-dir",
+        str(REPORT_DIR_OK),
         "--incremental",
     )
     out = (second.stdout or "") + (second.stderr or "")
@@ -251,12 +263,22 @@ def main() -> int:
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
 
-    missing = [n for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py") if not (ROOT / n).exists()]
+    missing = [
+        n
+        for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py")
+        if not (ROOT / n).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1
     try:
-        subprocess.run([interpreter(), "-c", "import pysnmp"], capture_output=True, env=make_env(), timeout=60, check=True)
+        subprocess.run(
+            [interpreter(), "-c", "import pysnmp"],
+            capture_output=True,
+            env=make_env(),
+            timeout=60,
+            check=True,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"准备：[!] 解释器里没有 pysnmp：{exc}")
         return 1
@@ -270,7 +292,10 @@ def main() -> int:
     ]
     alive = {name: wait_agent(port) for name, port in ports.items()}
     all_alive = all(alive.values())
-    print("假设备：" + "　".join(f"{name} {ports[name]}{'' if alive[name] else ' [!]'}" for name in ports))
+    print(
+        "假设备："
+        + "　".join(f"{name} {ports[name]}{'' if alive[name] else ' [!]'}" for name in ports)
+    )
 
     passed = required_failed = 0
     try:
@@ -301,7 +326,9 @@ def main() -> int:
     print("\n" + "-" * 64)
     print(f"通过 {passed}/{total}　必做失败 {required_failed}")
     if required_failed:
-        print("结论：还没全绿。若只完成「复制 + 验收脚本」、尚未实现 report.py 与 --report-dir/--incremental，这是预期结果。")
+        print(
+            "结论：还没全绿。若只完成「复制 + 验收脚本」、尚未实现 report.py 与 --report-dir/--incremental，这是预期结果。"
+        )
     else:
         print("结论：全绿。结果落盘 + 增量巡检跑通了。")
     return 0 if required_failed == 0 else 1

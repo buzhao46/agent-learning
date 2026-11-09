@@ -151,19 +151,21 @@ subparsers 做的事：**在解析阶段就把两个子命令隔离开，各自�
 
 ```python
 parser = argparse.ArgumentParser(prog=PROG, description="设备巡检工具：先确认配置，再采一遍")
-sub = parser.add_subparsers(dest="command", required=True)      # ①
+sub = parser.add_subparsers(dest="command", required=True)  # ①
 
-p_list = sub.add_parser("list", help="只列设备清单，不采集")      # ②
+p_list = sub.add_parser("list", help="只列设备清单，不采集")  # ②
 p_list.add_argument("--file", default=str(DEFAULT_FILE), help="设备清单 json 路径")
 p_list.add_argument("--device", help="只看某台设备，例如 core-sw-01")
 p_list.add_argument("--limit", type=positive_int, help="只输出前N台设备")
-p_list.set_defaults(func=cmd_list)                              # ③
+p_list.set_defaults(func=cmd_list)  # ③
 
 p_status = sub.add_parser("status", help="采集每台设备并输出状态与耗时")
 p_status.add_argument("--file", default=str(DEFAULT_FILE), help="设备清单 json 路径")
 p_status.add_argument("--device", help="只看某台设备，例如 core-sw-01")
 p_status.add_argument("--limit", type=positive_int, help="只采集前N台设备")
-p_status.add_argument("--attempts", type=positive_int, default=3, help="单台最多尝试几次（含第一次）")
+p_status.add_argument(
+    "--attempts", type=positive_int, default=3, help="单台最多尝试几次（含第一次）"
+)
 p_status.add_argument("-v", "--verbose", action="store_true", help="打开DEBUG日志")
 p_status.set_defaults(func=cmd_status)
 
@@ -255,7 +257,7 @@ D3 那个 `args.v` / `args.verbose` 的报错，本质是同一件事——**你
 ### 2.2 顺序：必须先建 logger，再分发
 
 ```python
-get_log(level)        # ← 必须在前
+get_log(level)  # ← 必须在前
 return args.func(args)  # ← 必须在后
 ```
 

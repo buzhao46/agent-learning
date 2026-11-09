@@ -34,12 +34,38 @@ from state import load_groups, load_state, save_state
 SECRET_ENV = "ACK_SECRET"
 
 
+class AckServer(ThreadingHTTPServer):
+    """带配置属性的 HTTP 服务：把 state / groups / secret 挂在实例上供 Handler 读取。"""
+
+    state_path: str
+    groups_path: str | None
+    secret: str
+
+    def __init__(
+        self,
+        server_address: tuple[str, int],
+        handler_class: type[AckHandler],
+        *,
+        state_path: str,
+        groups_path: str | None,
+        secret: str,
+    ) -> None:
+        super().__init__(server_address, handler_class)
+        self.state_path = state_path
+        self.groups_path = groups_path
+        self.secret = secret
+
+
 class AckHandler(BaseHTTPRequestHandler):
+    server: AckServer
+
     # 让日志安静一点
     def log_message(self, *args):  # noqa: D401
         pass
 
-    def _send(self, body: str, code: int = 200, content_type: str = "text/html; charset=utf-8") -> None:
+    def _send(
+        self, body: str, code: int = 200, content_type: str = "text/html; charset=utf-8"
+    ) -> None:
         data = body.encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", content_type)
@@ -68,8 +94,11 @@ class AckHandler(BaseHTTPRequestHandler):
         groups = load_groups(self.server.groups_path)
         rows, grows, summary = board.collect(state, groups, datetime.now())
         import json
-        self._send(json.dumps({"devices": rows, "groups": grows, "summary": summary},
-                              ensure_ascii=False), content_type="application/json; charset=utf-8")
+
+        self._send(
+            json.dumps({"devices": rows, "groups": grows, "summary": summary}, ensure_ascii=False),
+            content_type="application/json; charset=utf-8",
+        )
 
     def _handle_ack(self, q: dict) -> None:
         device = (q.get("device") or [""])[0]
@@ -87,8 +116,12 @@ class AckHandler(BaseHTTPRequestHandler):
                 self._send("<h1>403</h1><p>签名无效，拒绝确认。</p>", code=403)
                 return
             groups = load_groups(self.server.groups_path)
-            targets = {m for g in groups.get("groups", []) if g.get("name") == group
-                       for m in g.get("members", [])}
+            targets = {
+                m
+                for g in groups.get("groups", [])
+                if g.get("name") == group
+                for m in g.get("members", [])
+            }
         else:
             self._send("<h1>400</h1><p>缺少 device 或 group。</p>", code=400)
             return
@@ -117,11 +150,16 @@ def main() -> int:
     parser.add_argument("--secret", default=acktoken.DEFAULT_SECRET, help="ack 链接签名密钥")
     args = parser.parse_args()
 
-    httpd = ThreadingHTTPServer((args.host, args.port), AckHandler)
-    httpd.state_path = args.state
-    httpd.groups_path = args.groups
-    httpd.secret = args.secret
-    print(f"ack 闭环服务已启动： http://{args.host}:{args.port}/  （secret={'默认' if args.secret == acktoken.DEFAULT_SECRET else '已设置'}）")
+    httpd = AckServer(
+        (args.host, args.port),
+        AckHandler,
+        state_path=args.state,
+        groups_path=args.groups,
+        secret=args.secret,
+    )
+    print(
+        f"ack 闭环服务已启动： http://{args.host}:{args.port}/  （secret={'默认' if args.secret == acktoken.DEFAULT_SECRET else '已设置'}）"
+    )
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

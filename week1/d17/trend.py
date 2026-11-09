@@ -47,7 +47,9 @@ def render_table(trends: list) -> None:
         ]
         for t in trends
     ]
-    widths = [max([disp_width(h)] + [disp_width(r[i]) for r in rows]) for i, h in enumerate(HEADERS)]
+    widths = [
+        max([disp_width(h)] + [disp_width(r[i]) for r in rows]) for i, h in enumerate(HEADERS)
+    ]
 
     print("  ".join(pad(h, widths[i]) for i, h in enumerate(HEADERS)).rstrip())
     print("  ".join("-" * widths[i] for i in range(len(HEADERS))))

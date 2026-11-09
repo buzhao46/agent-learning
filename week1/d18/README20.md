@@ -43,8 +43,8 @@ week1/d18/
 `step` 只产 `alert_open / close / stale`，`maybe_escalate` 只产 `alert_escalate`，`correlate` 只产 `group_alert`。聚合产物是「发送层的合成事件」，不在状态机生产列表里，所以在 `alerts.py` 只**登记两个常量**，供 `alert.py` 构造摘要事件时用：
 
 ```python
-EVENT_DIGEST = "alert_digest"        # 本轮新增告警的摘要
-EVENT_ESC_DIGEST = "escalate_digest" # 本轮升级事件的摘要
+EVENT_DIGEST = "alert_digest"  # 本轮新增告警的摘要
+EVENT_ESC_DIGEST = "escalate_digest"  # 本轮升级事件的摘要
 ```
 
 不往 `step` 里塞，是因为摘要是「同一轮多个事件的组合视图」，没有单一的状态跃迁对应它——硬塞进 `Event` 生产链只会让状态机脏。

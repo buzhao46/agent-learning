@@ -24,9 +24,9 @@ import logging
 import sys
 from pathlib import Path
 
-from log_setup import get_log
-from models import DEFAULT_FILE, Device, SnmpError, load_devices
-from probe import collect_all
+from .log_setup import get_log
+from .models import DEFAULT_FILE, Device, SnmpError, load_devices
+from .probe import collect_all
 
 PROG = "snmpcheck"
 
@@ -144,7 +144,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     if picked is None:
         return 2
 
-    results = collect_all(picked,attempts=args.attempts)
+    results = collect_all(picked, attempts=args.attempts)
     print_table(
         [r.device for r in results],
         {r.device.name: r.elapsed for r in results},
@@ -167,7 +167,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_status.add_argument("--file", default=str(DEFAULT_FILE), help="设备清单 json 路径")
     p_status.add_argument("--device", help="只看某台设备，例如 core-sw-01")
     p_status.add_argument("--limit", type=positive_int, help="只采集前N台设备")
-    p_status.add_argument("--attempts", type=positive_int, default=3, help="单台最多尝试几次（含第一次）")
+    p_status.add_argument(
+        "--attempts", type=positive_int, default=3, help="单台最多尝试几次（含第一次）"
+    )
     p_status.add_argument("-v", "--verbose", action="store_true", help="打开DEBUG日志")
     p_status.set_defaults(func=cmd_status)
 

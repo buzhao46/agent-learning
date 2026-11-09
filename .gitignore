@@ -34,3 +34,8 @@ _check_devices.json
 
 # 嵌套 out 目录（按天建的子目录）
 **/out/
+
+# coverage 数据文件（保留 .coveragerc 配置本身）
+.coverage
+.coverage.json
+.coverage.*

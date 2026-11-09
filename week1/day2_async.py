@@ -10,6 +10,7 @@
 
 验收：看到「串行 vs 并发」耗时对比（并发应明显更快），且超时被正确捕获。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -82,7 +83,11 @@ async def real_http() -> None:
     """真实异步 HTTP：httpx.AsyncClient + gather（Day 3 之后你会天天用）。"""
     import httpx
 
-    urls = ["https://httpbin.org/delay/1", "https://httpbin.org/delay/1", "https://httpbin.org/delay/1"]
+    urls = [
+        "https://httpbin.org/delay/1",
+        "https://httpbin.org/delay/1",
+        "https://httpbin.org/delay/1",
+    ]
     t = time.perf_counter()
     async with httpx.AsyncClient(timeout=10) as client:
         reqs = [client.get(u) for u in urls]
@@ -95,10 +100,14 @@ async def real_http() -> None:
 
 async def main() -> None:
     t_seq, seq = await sequential()
-    print(f"串行：{t_seq:.2f}s  →  {[r.get('device', r.get('error')) if isinstance(r, dict) else r for r in seq]}")
+    print(
+        f"串行：{t_seq:.2f}s  →  {[r.get('device', r.get('error')) if isinstance(r, dict) else r for r in seq]}"
+    )
 
     t_con, con = await concurrent()
-    print(f"并发：{t_con:.2f}s  →  {[r.get('device', str(r)[:20]) if isinstance(r, dict) else str(r)[:24] for r in con]}")
+    print(
+        f"并发：{t_con:.2f}s  →  {[r.get('device', str(r)[:20]) if isinstance(r, dict) else str(r)[:24] for r in con]}"
+    )
     print(f"提速约 {t_seq / t_con:.1f}x\n")
 
     print("超时控制：")

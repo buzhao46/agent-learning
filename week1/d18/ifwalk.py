@@ -36,7 +36,6 @@ from pysnmp.hlapi import (
     walkCmd,
 )
 from pysnmp.proto.rfc1902 import OctetString
-
 from snmpio import ProbeError
 
 # 三列各自的「列 OID」（不带行号）。WALK 就从这里往下走。
@@ -160,7 +159,6 @@ def walk(
                 else value.prettyPrint()
             )
             rows.append((str(name), text))
-        
 
     return rows
 
@@ -195,15 +193,18 @@ def build_interfaces(
         octets 里没有这个行号  → in_octets=None
         行号只以 descr 为准（接口名是这张表的主键，没有名字的行没有意义）
     """
-    name_by_index = {if_index(oid,OID_IF_DESCR): text for oid, text in descr}
-    status_by_index = { if_index(oid, OID_IF_OPER):   OPER_STATUS.get(int(text), f"未知({text})") for oid, text in status }
-    octets_by_index = { if_index(oid, OID_IF_IN_OCTETS): int(text) for oid, text in octets }
-    return [ 
+    name_by_index = {if_index(oid, OID_IF_DESCR): text for oid, text in descr}
+    status_by_index = {
+        if_index(oid, OID_IF_OPER): OPER_STATUS.get(int(text), f"未知({text})")
+        for oid, text in status
+    }
+    octets_by_index = {if_index(oid, OID_IF_IN_OCTETS): int(text) for oid, text in octets}
+    return [
         Interface(
             index=index,
             name=name,
             status=status_by_index.get(index, "未知"),
-            in_octets=octets_by_index.get(index),  
+            in_octets=octets_by_index.get(index),
         )
         for index, name in sorted(name_by_index.items())
     ]

@@ -11,6 +11,7 @@ check 在进程内 import probe：
   - 并发     = 调 scan_config（内部线程池）
 两者在同一进程、同一批设备下计时，最公平。
 """
+
 from __future__ import annotations
 
 import contextlib
@@ -29,8 +30,7 @@ ENTRY = ROOT / "probe.py"
 VENV_PY = ROOT.parent / ".venv" / "Scripts" / "python.exe"
 
 PING_PACKET = bytes.fromhex(
-    "302802010104067075626c6963a01b020344e2a8"
-    "020100020100300e300c06082b060102010101000500"
+    "302802010104067075626c6963a01b020344e2a8020100020100300e300c06082b060102010101000500"
 )
 
 N_UNREACHABLE = 6  # 不可达设备：串行会逐台等超时，并发只等一个
@@ -105,7 +105,9 @@ def check_batch(ports: dict[str, int]) -> tuple[bool, str]:
         {"host": "127.0.0.1", "port": ports["errs"], "community": "public", "timeout": 0.5},
     ]
     for i in range(N_UNREACHABLE):
-        devs.append({"host": f"10.0.0.{100 + i}", "port": 161, "community": "secret", "timeout": 0.5})
+        devs.append(
+            {"host": f"10.0.0.{100 + i}", "port": 161, "community": "secret", "timeout": 0.5}
+        )
     total = len(devs)
 
     # 串行基准：顺序调用 _collect_one，不走线程池
@@ -146,7 +148,9 @@ def check_batch(ports: dict[str, int]) -> tuple[bool, str]:
     if "汇总" not in out:
         problems.append(f"无汇总行：{tail(out)}")
 
-    detail = f"串行 {serial:.1f}s vs 并发 {concurrent:.1f}s（{total} 台，含 {N_UNREACHABLE} 台不可达）"
+    detail = (
+        f"串行 {serial:.1f}s vs 并发 {concurrent:.1f}s（{total} 台，含 {N_UNREACHABLE} 台不可达）"
+    )
     if problems:
         return False, "\n".join(problems) + "\n  " + detail
     return True, f"混合批次并发扫完，退出码 1，{detail}，提速明显"
@@ -183,12 +187,22 @@ def main() -> int:
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
 
-    missing = [n for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py") if not (ROOT / n).exists()]
+    missing = [
+        n
+        for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py")
+        if not (ROOT / n).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1
     try:
-        subprocess.run([interpreter(), "-c", "import pysnmp"], capture_output=True, env=make_env(), timeout=60, check=True)
+        subprocess.run(
+            [interpreter(), "-c", "import pysnmp"],
+            capture_output=True,
+            env=make_env(),
+            timeout=60,
+            check=True,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"准备：[!] 解释器里没有 pysnmp：{exc}")
         return 1

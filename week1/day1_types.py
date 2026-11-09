@@ -14,6 +14,7 @@
 
 验收：不报错跑完；out/day1_devices.json 生成；未知设备时打印友好错误而不是崩栈。
 """
+
 from __future__ import annotations
 
 import argparse

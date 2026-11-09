@@ -15,6 +15,7 @@
 
 真实设备接入：把 TOOL_IMPL 里的函数体换成 pysnmp 采集即可，schema 一行不用改。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -157,7 +158,9 @@ class RulePolicy:
         elif name == "get_device_health":
             self.health[result.get("device", args.get("device", "?"))] = result
         elif name == "get_interface_errors":
-            self.if_errors[result.get("device", args.get("device", "?"))] = result.get("interfaces", [])
+            self.if_errors[result.get("device", args.get("device", "?"))] = result.get(
+                "interfaces", []
+            )
 
     def final_answer(self) -> str:
         """把观察到的数据整理成分级诊断——注意：规则版和 LLM 版最终都得给这个东西。"""
@@ -219,7 +222,12 @@ def run_agent(task: str, max_steps: int = 8, verbose: bool = True) -> dict[str, 
                 trace.append({"step": step, "type": "final", "text": text})
                 if verbose:
                     print(f"\n[STEP {step}] 决定收工\n{text}")
-                return {"mode": "llm", "final": text, "trace": trace, "seconds": round(time.perf_counter() - t0, 2)}
+                return {
+                    "mode": "llm",
+                    "final": text,
+                    "trace": trace,
+                    "seconds": round(time.perf_counter() - t0, 2),
+                }
 
             if verbose:
                 print(f"\n[STEP {step}] 模型要求调用 {len(calls)} 个工具")
@@ -241,9 +249,19 @@ def run_agent(task: str, max_steps: int = 8, verbose: bool = True) -> dict[str, 
             for c in calls:
                 result = execute_tool(c["name"], c["arguments"])
                 if verbose:
-                    print(f"   ACTION  {c['name']}({json.dumps(c['arguments'], ensure_ascii=False)})")
+                    print(
+                        f"   ACTION  {c['name']}({json.dumps(c['arguments'], ensure_ascii=False)})"
+                    )
                     print(f"   OBSERVE {json.dumps(result, ensure_ascii=False)[:160]}")
-                trace.append({"step": step, "type": "action", "tool": c["name"], "args": c["arguments"], "result": result})
+                trace.append(
+                    {
+                        "step": step,
+                        "type": "action",
+                        "tool": c["name"],
+                        "args": c["arguments"],
+                        "result": result,
+                    }
+                )
                 messages.append(
                     {
                         "role": "tool",
@@ -261,7 +279,12 @@ def run_agent(task: str, max_steps: int = 8, verbose: bool = True) -> dict[str, 
             trace.append({"step": step, "type": "final", "text": text})
             if verbose:
                 print(f"\n[STEP {step}] 信息已足够，输出诊断\n{text}")
-            return {"mode": "rule", "final": text, "trace": trace, "seconds": round(time.perf_counter() - t0, 2)}
+            return {
+                "mode": "rule",
+                "final": text,
+                "trace": trace,
+                "seconds": round(time.perf_counter() - t0, 2),
+            }
 
         name, args = nxt
         result = execute_tool(name, args)
@@ -276,7 +299,12 @@ def run_agent(task: str, max_steps: int = 8, verbose: bool = True) -> dict[str, 
     # ---- 兜底：步数用尽
     msg = f"达到最大步数 {max_steps}，强制结束（防止死循环）。已执行 {len(trace)} 次动作。"
     trace.append({"step": max_steps, "type": "abort", "text": msg})
-    return {"mode": "llm" if use_llm else "rule", "final": msg, "trace": trace, "seconds": round(time.perf_counter() - t0, 2)}
+    return {
+        "mode": "llm" if use_llm else "rule",
+        "final": msg,
+        "trace": trace,
+        "seconds": round(time.perf_counter() - t0, 2),
+    }
 
 
 def thought_text(name: str, args: dict[str, Any]) -> str:

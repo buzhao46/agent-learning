@@ -82,7 +82,11 @@ def device(host: str, port: int, verdict: str) -> dict:
 
 def summarize(devices: list[dict]) -> dict:
     verdicts = [d["verdict"] for d in devices]
-    ok, degraded, failed = verdicts.count("OK"), verdicts.count("DEGRADED"), verdicts.count("FAILED")
+    ok, degraded, failed = (
+        verdicts.count("OK"),
+        verdicts.count("DEGRADED"),
+        verdicts.count("FAILED"),
+    )
     worst = "FAILED" if failed else ("DEGRADED" if degraded else "OK")
     return {
         "total": len(devices),
@@ -93,7 +97,9 @@ def summarize(devices: list[dict]) -> dict:
     }
 
 
-def write_report(directory: Path, seq: int, devices: list[dict], *, minutes_ago: float = 0.0) -> Path:
+def write_report(
+    directory: Path, seq: int, devices: list[dict], *, minutes_ago: float = 0.0
+) -> Path:
     """造一份报告。generated_at = 现在 - minutes_ago，让 stale 判定可控。
     文件名必须匹配 scan_*.json，且序号递增 —— load_reports 用 (generated_at, 文件名) 排序。"""
     directory.mkdir(parents=True, exist_ok=True)
@@ -118,12 +124,18 @@ def paths(name: str) -> tuple[Path, Path, Path]:
 
 def run(report_dir, state_path, log_path, *extra, channel="file"):
     return run_alert(
-        "--report-dir", str(report_dir),
-        "--state", str(state_path),
-        "--log", str(log_path),
-        "--channel", channel,
-        "--threshold", "3",
-        "--recover", "2",
+        "--report-dir",
+        str(report_dir),
+        "--state",
+        str(state_path),
+        "--log",
+        str(log_path),
+        "--channel",
+        channel,
+        "--threshold",
+        "3",
+        "--recover",
+        "2",
         *extra,
     )
 
@@ -135,7 +147,9 @@ def read_state(path: Path) -> dict:
 def read_log(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def seed_alert(name: str, host: str = "10.0.0.40", minutes: tuple[float, ...] = (3.0, 2.0, 1.0)):
@@ -209,7 +223,9 @@ def check_recover_debounce() -> tuple[bool, str]:
 
     problems = []
     if once_state["devices"][label]["status"] != "ALERT":
-        problems.append(f"只 1 次 OK（recover=2）就消警了，实际 {once_state['devices'][label]['status']}")
+        problems.append(
+            f"只 1 次 OK（recover=2）就消警了，实际 {once_state['devices'][label]['status']}"
+        )
     if any(e.get("kind") == "alert_close" for e in read_log(log_path)):
         problems.append("只 1 次 OK 就发了 alert_close")
     if once.returncode != 0:
@@ -249,7 +265,9 @@ def check_unknown_keeps_state() -> tuple[bool, str]:
     if label not in state["devices"]:
         problems.append("消失的设备被从状态里删掉了")
     elif state["devices"][label]["status"] != "ALERT":
-        problems.append(f"消失后状态变成 {state['devices'][label]['status']}（UNKNOWN 覆盖了 ALERT）")
+        problems.append(
+            f"消失后状态变成 {state['devices'][label]['status']}（UNKNOWN 覆盖了 ALERT）"
+        )
     if "本次报告里没有" not in out:
         problems.append("没有提示该设备本次无数据")
     if proc.returncode != 0:
@@ -288,7 +306,9 @@ def check_delivery_isolation() -> tuple[bool, str]:
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, [device("10.0.0.40", FAILED_PORT, "FAILED")], minutes_ago=ago)
 
-    bad = run(report_dir, state_path, log_path, "--webhook", "http://127.0.0.1:1/", channel="webhook")
+    bad = run(
+        report_dir, state_path, log_path, "--webhook", "http://127.0.0.1:1/", channel="webhook"
+    )
     state = read_state(state_path)
     label = f"10.0.0.40:{FAILED_PORT}"
 
@@ -411,7 +431,11 @@ def main() -> int:
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
 
-    missing = [name for name in ("alert.py", "alerts.py", "state.py", "notify.py") if not (ROOT / name).exists()]
+    missing = [
+        name
+        for name in ("alert.py", "alerts.py", "state.py", "notify.py")
+        if not (ROOT / name).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1

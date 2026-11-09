@@ -1,4 +1,5 @@
 """数据层：设备的数据结构与磁盘读写。不掺命令行，也不往屏幕上输出"""
+
 from __future__ import annotations
 
 import json
@@ -6,12 +7,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from log_setup import get_log
+from .log_setup import get_log
 
 Status = Literal["up", "down"]
 
 HERE = Path(__file__).parent
 DEFAULT_FILE = HERE / "devices.json"
+
 
 class SnmpError(RuntimeError):
     """配置错误 / 设备不存在都抛在这个，调用方按需捕获"""
@@ -31,7 +33,7 @@ class Device:
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
-        
+
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> Device:
         status = cast(Status, raw.get("status", "up"))
@@ -42,8 +44,9 @@ class Device:
             ip=raw["ip"],
             status=status,
             cpu=int(raw.get("cpu", 0)),
-            tags=list(raw.get("tags",[])),
+            tags=list(raw.get("tags", [])),
         )
+
 
 # 读写
 def load_devices(path: Path = DEFAULT_FILE) -> list[Device]:
@@ -53,9 +56,12 @@ def load_devices(path: Path = DEFAULT_FILE) -> list[Device]:
         raise SnmpError(f"配置文件不存在：{path}") from exc
     data = json.loads(text)
     if data["count"] != len(data["devices"]):
-        get_log().warning("devices.json 里 count=%s，实际 %s 台", data["count"], len(data["devices"]))
+        get_log().warning(
+            "devices.json 里 count=%s，实际 %s 台", data["count"], len(data["devices"])
+        )
 
     return [Device.from_dict(raw) for raw in data["devices"]]
+
 
 def save_devices(devices: list[Device], path: Path = DEFAULT_FILE) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)

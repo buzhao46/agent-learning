@@ -11,6 +11,7 @@
     python day5_param_lab.py --quick    # 只跑 temperature 对比
 验收：生成 md 文件，且你能说出「temperature=0 和 1.3 的差别在哪」。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,7 +21,9 @@ from pathlib import Path
 from llm_client import LLMClient
 
 # 故意选一个「有标准答案、但表达空间大」的问题
-QUESTION = "核心交换机 CPU 突然从 30% 涨到 92%，请给出最可能的 3 个原因，按可能性排序，每点不超过 20 字。"
+QUESTION = (
+    "核心交换机 CPU 突然从 30% 涨到 92%，请给出最可能的 3 个原因，按可能性排序，每点不超过 20 字。"
+)
 
 SYSTEMS = {
     "A_无约束": "你是一个助手。",
@@ -39,7 +42,7 @@ def run_matrix(llm: LLMClient, quick: bool) -> list[dict[str, object]]:
     temps = [0.0, 1.3] if quick else TEMPERATURES
     for sys_name, sys_prompt in SYSTEMS.items():
         for temp in temps:
-            for max_tokens in (MAX_TOKENS if not quick else [200]):
+            for max_tokens in MAX_TOKENS if not quick else [200]:
                 messages = [
                     {"role": "system", "content": sys_prompt},
                     {"role": "user", "content": QUESTION},

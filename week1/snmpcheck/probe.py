@@ -13,9 +13,9 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
-from log_setup import get_log
-from models import Device
-from resilience import Timer, retry_call
+from .log_setup import get_log
+from .models import Device, Status
+from .resilience import Timer, retry_call
 
 
 class ProbeError(RuntimeError):
@@ -47,7 +47,7 @@ def make_simulated_probe(device: Device, *, fail_times: int = 0) -> Callable[[],
             raise ProbeError(f"{device.name} 采集超时")
 
         cpu = (sum(ord(c) for c in device.name) * 7) % 100
-        status = "down" if cpu >= 95 else "up"
+        status: Status = "down" if cpu >= 95 else "up"
         return replace(device, cpu=cpu, status=status)
 
     return _probe

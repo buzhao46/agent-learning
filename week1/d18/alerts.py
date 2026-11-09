@@ -39,7 +39,7 @@ class Observation:
     """状态机的输入：一台设备本次的结论（由 history.Trend 映射而来）。"""
 
     label: str
-    verdict: str          # "ALERT" / "OK" / "UNKNOWN"
+    verdict: str  # "ALERT" / "OK" / "UNKNOWN"
     consecutive_bad: int = 0
     consecutive_ok: int = 0
     last_seen: str | None = None
@@ -175,9 +175,7 @@ def step(
             state["acked_at"] = None
             state["escalation_level"] = 0
             state["last_escalated_at"] = None
-            events.append(
-                Event(EVENT_OPEN, obs.label, old, ST_ALERT, _alert_reason(obs), stamp)
-            )
+            events.append(Event(EVENT_OPEN, obs.label, old, ST_ALERT, _alert_reason(obs), stamp))
         # 已经是 ALERT：只更新计数，不产生事件 —— 今天所有降噪都靠这一条
     elif obs.verdict == "OK":
         if old == ST_ALERT:
@@ -268,7 +266,7 @@ def maybe_escalate(
         moment = moment.astimezone().replace(tzinfo=None)
 
     waited = (now - moment).total_seconds() / 60
-    threshold = escalate_after * (2 ** level)
+    threshold = escalate_after * (2**level)
     if level < max_level and waited >= threshold:
         new_state = dict(prev)
         new_state["escalation_level"] = level + 1

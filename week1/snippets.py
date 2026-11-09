@@ -10,6 +10,7 @@
     跑一遍看效果：
         python snippets.py
 """
+
 from __future__ import annotations
 
 import csv
@@ -24,8 +25,11 @@ from typing import Any, Self, TypeVar
 
 T = TypeVar("T")
 
+
 # ============================================================ 1. 日志（替代 print）
-def setup_logger(name: str = "app", level: int = logging.INFO, logfile: str | None = None) -> logging.Logger:
+def setup_logger(
+    name: str = "app", level: int = logging.INFO, logfile: str | None = None
+) -> logging.Logger:
     """一行配好日志。比 print 强的地方：有级别、有时间、能写文件、线上能关掉。
 
     用法：log = setup_logger("snmp"); log.info("采集 %s 完成", device)
@@ -86,9 +90,15 @@ def fmt_table(rows: Sequence[dict[str, Any]], headers: Sequence[str] | None = No
     def line(ch: str = "-") -> str:
         return "+".join(ch * (w + 2) for w in widths)
 
-    out = [line(), " | ".join(str(h).ljust(w) for h, w in zip(headers, widths)), line()]
+    out = [
+        line(),
+        " | ".join(str(h).ljust(w) for h, w in zip(headers, widths, strict=False)),
+        line(),
+    ]
     for r in rows:
-        out.append(" | ".join(str(r.get(h, "")).ljust(w) for h, w in zip(headers, widths)))
+        out.append(
+            " | ".join(str(r.get(h, "")).ljust(w) for h, w in zip(headers, widths, strict=False))
+        )
     out.append(line())
     return "\n".join(out)
 
@@ -196,7 +206,9 @@ if __name__ == "__main__":
     print("已写出 out/snippets_demo.json 与 out/snippets_demo.csv")
 
     print("分批：", list(chunked(range(7), 3)))
-    print("safe_int('unknown') =", safe_int("unknown"), "| env 缺省 =", env("NOT_EXIST", "fallback"))
+    print(
+        "safe_int('unknown') =", safe_int("unknown"), "| env 缺省 =", env("NOT_EXIST", "fallback")
+    )
     log.warning("这是一条 warning，注意它带级别和时间")
     log.error("这是一条 error")
 

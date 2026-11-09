@@ -61,7 +61,9 @@ def tail(text: str, n: int = 900) -> str:
     return "\n".join(body.splitlines()[-14:])[:n] if body else "(空)"
 
 
-def device(host: str, port: int, verdict: str, uptime: int | None = None, if_count: int = 3) -> dict:
+def device(
+    host: str, port: int, verdict: str, uptime: int | None = None, if_count: int = 3
+) -> dict:
     """一台设备的报告片段。结构与 probe.result_to_dict 保持一致。"""
     return {
         "host": host,
@@ -78,7 +80,11 @@ def device(host: str, port: int, verdict: str, uptime: int | None = None, if_cou
 
 def summarize(devices: list[dict]) -> dict:
     verdicts = [d["verdict"] for d in devices]
-    ok, degraded, failed = verdicts.count("OK"), verdicts.count("DEGRADED"), verdicts.count("FAILED")
+    ok, degraded, failed = (
+        verdicts.count("OK"),
+        verdicts.count("DEGRADED"),
+        verdicts.count("FAILED"),
+    )
     worst = "FAILED" if failed else ("DEGRADED" if degraded else "OK")
     return {
         "total": len(devices),
@@ -118,11 +124,17 @@ def by_label(report: dict) -> dict[str, dict]:
 def check_aggregate() -> tuple[bool, str]:
     directory = TMP / "b1"
     for seq in (1, 2, 3):
-        write_report(directory, seq, [
-            device("127.0.0.1", 1161, "OK", uptime=1000 + seq * 100),
-            device("127.0.0.1", 1162, "OK" if seq != 2 else "DEGRADED", uptime=2000 + seq * 100),
-            device("10.0.0.9", 161, "FAILED"),
-        ])
+        write_report(
+            directory,
+            seq,
+            [
+                device("127.0.0.1", 1161, "OK", uptime=1000 + seq * 100),
+                device(
+                    "127.0.0.1", 1162, "OK" if seq != 2 else "DEGRADED", uptime=2000 + seq * 100
+                ),
+                device("10.0.0.9", 161, "FAILED"),
+            ],
+        )
 
     proc, data = run_json(directory, "--threshold", "3")
     out = (proc.stdout or "") + (proc.stderr or "")
@@ -156,10 +168,14 @@ def check_consecutive() -> tuple[bool, str]:
     # E：FAILED → OK → OK → OK，从尾部数是 3 个 OK
     sequence = [("OK", "FAILED"), ("DEGRADED", "OK"), ("FAILED", "OK"), ("FAILED", "OK")]
     for seq, (verdict_d, verdict_e) in enumerate(sequence, start=1):
-        write_report(directory, seq, [
-            device("10.0.0.10", 161, verdict_d),
-            device("10.0.0.11", 161, verdict_e),
-        ])
+        write_report(
+            directory,
+            seq,
+            [
+                device("10.0.0.10", 161, verdict_d),
+                device("10.0.0.11", 161, verdict_e),
+            ],
+        )
 
     proc, data = run_json(directory, "--threshold", "1")
     out = (proc.stdout or "") + (proc.stderr or "")
@@ -171,7 +187,9 @@ def check_consecutive() -> tuple[bool, str]:
     d = trends.get("10.0.0.10:161", {})
     e = trends.get("10.0.0.11:161", {})
     if d.get("consecutive_bad") != 3:
-        problems.append(f"10.0.0.10 连续非 OK 应为 3（OK,DEGRADED,FAILED,FAILED），实际 {d.get('consecutive_bad')}")
+        problems.append(
+            f"10.0.0.10 连续非 OK 应为 3（OK,DEGRADED,FAILED,FAILED），实际 {d.get('consecutive_bad')}"
+        )
     if d.get("consecutive_ok") != 0:
         problems.append(f"10.0.0.10 连续 OK 应为 0，实际 {d.get('consecutive_ok')}")
     if e.get("consecutive_bad") != 0:
@@ -199,9 +217,13 @@ def check_dedup() -> tuple[bool, str]:
 
     problems = []
     if loose_trend["status"] != "ALERT" or loose.returncode != 1:
-        problems.append(f"阈值 2 应 ALERT + 退出码 1，实际 {loose_trend['status']} / {loose.returncode}")
+        problems.append(
+            f"阈值 2 应 ALERT + 退出码 1，实际 {loose_trend['status']} / {loose.returncode}"
+        )
     if strict_trend["status"] != "OK" or strict.returncode != 0:
-        problems.append(f"阈值 3 应 OK + 退出码 0（连续 2 次未到阈值），实际 {strict_trend['status']} / {strict.returncode}")
+        problems.append(
+            f"阈值 3 应 OK + 退出码 0（连续 2 次未到阈值），实际 {strict_trend['status']} / {strict.returncode}"
+        )
     if "未到阈值" not in strict_trend["reason"]:
         problems.append(f"阈值 3 的 reason 没说清为何不告警：{strict_trend['reason']!r}")
 
@@ -214,18 +236,30 @@ def check_restart() -> tuple[bool, str]:
     directory = TMP / "b4"
     # 10.0.0.30：uptime 变小 → 重启；中间夹一条缺值样本，不能被当成 0
     # 10.0.0.31：uptime 单调变大 → 未重启，delta 正常
-    write_report(directory, 1, [
-        device("10.0.0.30", 161, "OK", uptime=12345678),
-        device("10.0.0.31", 161, "OK", uptime=1000),
-    ])
-    write_report(directory, 2, [
-        device("10.0.0.30", 161, "OK", uptime=5000),
-        device("10.0.0.31", 161, "OK", uptime=2000),
-    ])
-    write_report(directory, 3, [
-        device("10.0.0.30", 161, "OK", uptime=None),
-        device("10.0.0.31", 161, "OK", uptime=4000),
-    ])
+    write_report(
+        directory,
+        1,
+        [
+            device("10.0.0.30", 161, "OK", uptime=12345678),
+            device("10.0.0.31", 161, "OK", uptime=1000),
+        ],
+    )
+    write_report(
+        directory,
+        2,
+        [
+            device("10.0.0.30", 161, "OK", uptime=5000),
+            device("10.0.0.31", 161, "OK", uptime=2000),
+        ],
+    )
+    write_report(
+        directory,
+        3,
+        [
+            device("10.0.0.30", 161, "OK", uptime=None),
+            device("10.0.0.31", 161, "OK", uptime=4000),
+        ],
+    )
 
     proc, data = run_json(directory, "--threshold", "1")
     out = (proc.stdout or "") + (proc.stderr or "")
@@ -242,11 +276,15 @@ def check_restart() -> tuple[bool, str]:
     if restarted.get("uptime_delta") is not None:
         problems.append(f"跨重启不该给 delta，实际 {restarted.get('uptime_delta')}")
     if restarted.get("uptime_ticks") != 5000:
-        problems.append(f"10.0.0.30 最新 uptime_ticks 应为 5000（缺值样本跳过），实际 {restarted.get('uptime_ticks')}")
+        problems.append(
+            f"10.0.0.30 最新 uptime_ticks 应为 5000（缺值样本跳过），实际 {restarted.get('uptime_ticks')}"
+        )
     if steady.get("restarted") is not False:
         problems.append("10.0.0.31 不该被判成重启")
     if steady.get("uptime_delta") != 3000:
-        problems.append(f"10.0.0.31 delta 应为 3000（1000→4000），实际 {steady.get('uptime_delta')}")
+        problems.append(
+            f"10.0.0.31 delta 应为 3000（1000→4000），实际 {steady.get('uptime_delta')}"
+        )
 
     if problems:
         return False, "；".join(problems) + "\n" + tail(out)
@@ -260,8 +298,15 @@ def check_robust() -> tuple[bool, str]:
         "schema": 1,
         "generated_at": "2026-11-03T09:00:00",
         "summary": {"total": 1, "ok": 1, "degraded": 0, "failed": 0, "exit_code": 0},
-        "devices": [{"host": "10.0.0.9", "verdict": "OK", "exit_code": 0,
-                     "values": {"ifTable": 4}, "failures": []}],
+        "devices": [
+            {
+                "host": "10.0.0.9",
+                "verdict": "OK",
+                "exit_code": 0,
+                "values": {"ifTable": 4},
+                "failures": [],
+            }
+        ],
     }
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "scan_20261103-090000.json").write_text(
@@ -326,7 +371,9 @@ def main() -> int:
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
 
-    missing = [name for name in ("trend.py", "history.py", "report.py") if not (ROOT / name).exists()]
+    missing = [
+        name for name in ("trend.py", "history.py", "report.py") if not (ROOT / name).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1

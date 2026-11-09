@@ -10,6 +10,7 @@
 check 自己拉起两台 fake_agent（正常 / 部分失败），第三台用不可达地址，
 动态生成 _check_devices.json 后调 probe.py --config，跑完自动关 agent。
 """
+
 from __future__ import annotations
 
 import json
@@ -27,8 +28,7 @@ VENV_PY = ROOT.parent / ".venv" / "Scripts" / "python.exe"
 
 # 一条真实的 SNMPv2c GET sysDescr 报文（真包），用来独立探活
 PING_PACKET = bytes.fromhex(
-    "302802010104067075626c6963a01b020344e2a8"
-    "020100020100300e300c06082b060102010101000500"
+    "302802010104067075626c6963a01b020344e2a8020100020100300e300c06082b060102010101000500"
 )
 
 
@@ -158,12 +158,22 @@ def main() -> int:
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
 
-    missing = [n for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py") if not (ROOT / n).exists()]
+    missing = [
+        n
+        for n in ("probe.py", "ifwalk.py", "snmpio.py", "fake_agent.py")
+        if not (ROOT / n).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1
     try:
-        subprocess.run([interpreter(), "-c", "import pysnmp"], capture_output=True, env=make_env(), timeout=60, check=True)
+        subprocess.run(
+            [interpreter(), "-c", "import pysnmp"],
+            capture_output=True,
+            env=make_env(),
+            timeout=60,
+            check=True,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"准备：[!] 解释器里没有 pysnmp：{exc}")
         return 1

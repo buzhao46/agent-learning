@@ -26,10 +26,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import acktoken
+import roster
 from alerts import (
     EVENT_DIGEST,
-    EVENT_ESCALATE,
     EVENT_ESC_DIGEST,
+    EVENT_ESCALATE,
     EVENT_GROUP,
     EVENT_OPEN,
     Event,
@@ -41,8 +43,6 @@ from alerts import (
 )
 from history import build_trends
 from notify import send
-import acktoken
-import roster
 from state import enqueue, load_groups, load_state, save_state
 
 
@@ -197,16 +197,24 @@ def correlate(
                 gstate["since"] = stamp
                 final_events.append(
                     Event(
-                        EVENT_GROUP, g["name"], "OK", "ALERT",
-                        f"{g['name']}：{n_alert}/{n_total} 设备不可达，疑似上游故障", stamp,
+                        EVENT_GROUP,
+                        g["name"],
+                        "OK",
+                        "ALERT",
+                        f"{g['name']}：{n_alert}/{n_total} 设备不可达，疑似上游故障",
+                        stamp,
                     )
                 )
         else:
             if gstate["status"] == "ALERT":
                 final_events.append(
                     Event(
-                        EVENT_GROUP, g["name"], "ALERT", "OK",
-                        f"{g['name']} 故障恢复，剩 {n_alert}/{n_total} 台异常", stamp,
+                        EVENT_GROUP,
+                        g["name"],
+                        "ALERT",
+                        "OK",
+                        f"{g['name']} 故障恢复，剩 {n_alert}/{n_total} 台异常",
+                        stamp,
                     )
                 )
             gstate["status"] = "OK"
@@ -262,16 +270,24 @@ def main() -> int:
     parser.add_argument("--silences", help="静默配置 JSON（数组）")
     parser.add_argument("--silence-until", help="全局静默到某个时间点（ISO）")
     parser.add_argument("--groups", help="分组拓扑 JSON（机房/网段 → 设备清单）")
-    parser.add_argument("--group-threshold", type=float, default=0.6, help="组内 ALERT 占比超过此值才收敛")
+    parser.add_argument(
+        "--group-threshold", type=float, default=0.6, help="组内 ALERT 占比超过此值才收敛"
+    )
     parser.add_argument("--escalate-after", type=int, default=30, help="未确认多少分钟升一级")
     parser.add_argument("--max-level", type=int, default=2, help="升级最高级别")
-    parser.add_argument("--escalate-channel", default="webhook", choices=["console", "file", "webhook"])
+    parser.add_argument(
+        "--escalate-channel", default="webhook", choices=["console", "file", "webhook"]
+    )
     parser.add_argument("--escalate-webhook", help="升级事件的目标 URL")
     parser.add_argument("--ack-base-url", help="确认链接基地址，如 http://host:8731（D19 闭环）")
     parser.add_argument("--ack-secret", default=acktoken.DEFAULT_SECRET, help="ack 链接签名密钥")
-    parser.add_argument("--roster", help="值班排班表 JSON（D21）：日期+班次→值班人，默认填到 ack 链接 by=")
+    parser.add_argument(
+        "--roster", help="值班排班表 JSON（D21）：日期+班次→值班人，默认填到 ack 链接 by="
+    )
     parser.add_argument("--shift", help="强制指定班次（day/night），不传则按当前小时推断")
-    parser.add_argument("--digest-threshold", type=int, default=2, help="同轮同类型事件≥N 条才聚成摘要（默认 2）")
+    parser.add_argument(
+        "--digest-threshold", type=int, default=2, help="同轮同类型事件≥N 条才聚成摘要（默认 2）"
+    )
     parser.add_argument("--no-digest", action="store_true", help="关闭摘要聚合，每条事件单独发")
     parser.add_argument("--dry-run", action="store_true", help="只算不写：不改状态、不发通知")
     args = parser.parse_args()
@@ -294,7 +310,9 @@ def main() -> int:
         print(f"{args.report_dir} 下没有报告，也没有历史状态，无事可做")
         return 0
 
-    print(f"趋势：{len(trends)} 台；状态文件：{len(state.get('devices', {}))} 台；待发 {len(state.get('pending', []))} 条")
+    print(
+        f"趋势：{len(trends)} 台；状态文件：{len(state.get('devices', {}))} 台；待发 {len(state.get('pending', []))} 条"
+    )
 
     # 1. 算趋势 → 过状态机
     observations = collect_observations(trends, state)
@@ -312,14 +330,17 @@ def main() -> int:
         old_status = (prev or {}).get("status", "-")
         marks = ", ".join(event.kind for event in events) or "-"
         stale_mark = " (stale)" if new_state.get("stale") else ""
-        print(f"  {obs.label:<22} {old_status:<8} → {new_state['status']:<8}{stale_mark:<8} {marks}")
+        print(
+            f"  {obs.label:<22} {old_status:<8} → {new_state['status']:<8}{stale_mark:<8} {marks}"
+        )
         new_events.extend(events)
 
     # 2. 升级扫描（独立纯函数，不污染 step 的跃迁语义）
     escalation_events = []
     for label, dev in state["devices"].items():
         new_dev, event = maybe_escalate(
-            label, dev,
+            label,
+            dev,
             escalate_after=args.escalate_after,
             max_level=args.max_level,
             now=now,
@@ -337,7 +358,9 @@ def main() -> int:
     for g in groups.get("groups", []):
         for member in g.get("members", []):
             label_to_group[member] = g["name"]
-    all_events, state = correlate(all_events, state, groups, label_to_group, args.group_threshold, now)
+    all_events, state = correlate(
+        all_events, state, groups, label_to_group, args.group_threshold, now
+    )
 
     if args.dry_run:
         print(f"\n[dry-run] 将产生 {len(all_events)} 条事件，状态不写盘、通知不发送")
@@ -396,7 +419,9 @@ def main() -> int:
         to_send.extend(active_opens)
     if not args.no_digest and len(active_escalations) >= args.digest_threshold:
         to_send.append(build_digest(active_escalations, state, args, now, EVENT_ESC_DIGEST))
-        print(f"  [聚合] {len(active_escalations)} 条升级 → 1 条升级摘要（阈值 {args.digest_threshold}）")
+        print(
+            f"  [聚合] {len(active_escalations)} 条升级 → 1 条升级摘要（阈值 {args.digest_threshold}）"
+        )
     else:
         to_send.extend(active_escalations)
 

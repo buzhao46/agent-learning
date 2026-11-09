@@ -19,21 +19,30 @@ from datetime import datetime
 from state import load_groups, load_state, save_state
 
 
-def resolve_targets(state: dict, groups_path: str | None, device: str | None, group: str | None) -> set[str]:
+def resolve_targets(
+    state: dict, groups_path: str | None, device: str | None, group: str | None
+) -> set[str]:
     """把 --device / --group 解析成要确认的设备 label 集合。"""
     targets: set[str] = set()
     if device:
         targets.add(device)
     if group:
         groups = load_groups(groups_path)
-        members = [m for g in groups.get("groups", []) if g.get("name") == group for m in g.get("members", [])]
+        members = [
+            m
+            for g in groups.get("groups", [])
+            if g.get("name") == group
+            for m in g.get("members", [])
+        ]
         if not members:
             print(f"[警告] 分组 {group!r} 里没有设备")
         targets.update(members)
     return targets
 
 
-def apply_ack(state: dict, targets: set[str], by: str | None, note: str | None, now: datetime) -> int:
+def apply_ack(
+    state: dict, targets: set[str], by: str | None, note: str | None, now: datetime
+) -> int:
     """对 targets 里仍是 ALERT 的设备写确认。返回确认了几台。直接改 state。"""
     acked = 0
     for label in sorted(targets):

@@ -39,10 +39,10 @@ def make_env() -> dict[str, str]:
 
 
 def run(args: list[str], *, timeout: int = 120) -> subprocess.CompletedProcess[str]:
-    """跑 `python snmpcheck.py <args>`。"""
+    """跑 `python -m snmpcheck.snmpcheck <args>`（包模式，cwd 在 week1）。"""
     return subprocess.run(
-        [interpreter(), "snmpcheck.py", *args],
-        cwd=str(ROOT),
+        [interpreter(), "-m", "snmpcheck.snmpcheck", *args],
+        cwd=str(ROOT.parent),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -53,10 +53,10 @@ def run(args: list[str], *, timeout: int = 120) -> subprocess.CompletedProcess[s
 
 
 def run_module(args: list[str], *, timeout: int = 120) -> subprocess.CompletedProcess[str]:
-    """跑 `python -m snmpcheck <args>`。"""
+    """跑 `python -m snmpcheck.snmpcheck <args>`（与 run 一致，保留用于 C7 演示）。"""
     return subprocess.run(
-        [interpreter(), "-m", "snmpcheck", *args],
-        cwd=str(ROOT),
+        [interpreter(), "-m", "snmpcheck.snmpcheck", *args],
+        cwd=str(ROOT.parent),
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -85,7 +85,14 @@ def rows_of(stdout: str) -> list[str]:
 
 
 def ready() -> tuple[bool, str]:
-    need = ("snmpcheck.py", "models.py", "log_setup.py", "probe.py", "resilience.py", "devices.json")
+    need = (
+        "snmpcheck.py",
+        "models.py",
+        "log_setup.py",
+        "probe.py",
+        "resilience.py",
+        "devices.json",
+    )
     missing = [n for n in need if not (ROOT / n).exists()]
     if missing:
         return False, f"缺文件：{', '.join(missing)}"
@@ -99,18 +106,27 @@ def ready() -> tuple[bool, str]:
 def check_c1() -> tuple[bool, str]:
     proc = run(["list"])
     if proc.returncode != 0:
-        return False, f"python snmpcheck.py list 退出码 {proc.returncode}\nstderr：\n{tail(proc.stderr)}"
+        return (
+            False,
+            f"python snmpcheck.py list 退出码 {proc.returncode}\nstderr：\n{tail(proc.stderr)}",
+        )
     if "设备" not in proc.stdout:
-        return False, "stdout 里没有表格表头，看起来 print_table 没被调用\nstdout：\n" + tail(proc.stdout)
+        return False, "stdout 里没有表格表头，看起来 print_table 没被调用\nstdout：\n" + tail(
+            proc.stdout
+        )
 
     rows = rows_of(proc.stdout)
     if len(rows) != len(device_names()):
-        return False, f"应列出 {len(device_names())} 台设备，实际 {len(rows)} 行\nstdout：\n{tail(proc.stdout)}"
+        return (
+            False,
+            f"应列出 {len(device_names())} 台设备，实际 {len(rows)} 行\nstdout：\n{tail(proc.stdout)}",
+        )
 
     with_ms = [r for r in rows if re.search(r"\d+\.\d+ms", r)]
     if with_ms:
         return False, (
-            "list 不该有耗时列（它不采集）。下面这些行带了耗时：\n" + "\n".join(with_ms)
+            "list 不该有耗时列（它不采集）。下面这些行带了耗时：\n"
+            + "\n".join(with_ms)
             + "\n（cmd_list 里应该 print_table(picked) 只传一个参数）"
         )
     return True, f"列出 {len(rows)} 台，无耗时列（正确，list 不采集）"
@@ -119,16 +135,23 @@ def check_c1() -> tuple[bool, str]:
 def check_c2() -> tuple[bool, str]:
     proc = run(["status"])
     if proc.returncode != 0:
-        return False, f"python snmpcheck.py status 退出码 {proc.returncode}\nstderr：\n{tail(proc.stderr)}"
+        return (
+            False,
+            f"python snmpcheck.py status 退出码 {proc.returncode}\nstderr：\n{tail(proc.stderr)}",
+        )
 
     rows = rows_of(proc.stdout)
     if len(rows) != len(device_names()):
-        return False, f"应输出 {len(device_names())} 台设备，实际 {len(rows)} 行\nstdout：\n{tail(proc.stdout)}"
+        return (
+            False,
+            f"应输出 {len(device_names())} 台设备，实际 {len(rows)} 行\nstdout：\n{tail(proc.stdout)}",
+        )
 
     no_ms = [r for r in rows if not re.search(r"\d+\.\d+ms", r)]
     if no_ms:
         return False, (
-            "status 的表格缺少耗时列。下面这些行没有：\n" + "\n".join(no_ms)
+            "status 的表格缺少耗时列。下面这些行没有：\n"
+            + "\n".join(no_ms)
             + "\n（cmd_status 里要把 {设备名: 秒数} 传给 print_table 的第二个参数）"
         )
     return True, "status 输出 3 台，每台都有耗时"
@@ -142,7 +165,10 @@ def check_c3() -> tuple[bool, str]:
             "后果：用户敲错命令，程序静默什么都不做，还以为成功了。"
         )
     if proc.returncode != 2:
-        return False, f"不带子命令时应以退出码 2 结束（argparse 的约定），实际 {proc.returncode}\nstderr：\n{tail(proc.stderr)}"
+        return (
+            False,
+            f"不带子命令时应以退出码 2 结束（argparse 的约定），实际 {proc.returncode}\nstderr：\n{tail(proc.stderr)}",
+        )
     blob = (proc.stderr or "") + (proc.stdout or "")
     if "list" not in blob or "status" not in blob:
         return False, f"报错信息里没有列出可用的子命令：\n{tail(blob)}"
@@ -158,7 +184,10 @@ def check_c4() -> tuple[bool, str]:
     if missing:
         return False, f"--help 里看不到 {', '.join(missing)}\n实际输出：\n{tail(text)}"
     if "{" not in text:
-        return False, "--help 里没有出现 {list,status} 这样的选择列表，子命令可能没注册到 subparsers 上"
+        return (
+            False,
+            "--help 里没有出现 {list,status} 这样的选择列表，子命令可能没注册到 subparsers 上",
+        )
     return True, "--help 列出了 list 与 status"
 
 
@@ -193,7 +222,10 @@ def check_c6() -> tuple[bool, str]:
     one_fail = (one.stderr or "").count("采集失败")
 
     if base_fail != 0:
-        return False, f"默认 status 不应有采集失败（attempts 默认 3，3 台设备最多抖 2 次），实际 {base_fail} 台失败"
+        return (
+            False,
+            f"默认 status 不应有采集失败（attempts 默认 3，3 台设备最多抖 2 次），实际 {base_fail} 台失败",
+        )
     if one_fail != 2:
         return False, (
             f"status --attempts 1 应有 2 台失败（第 2、3 台各要抖一次），实际 {one_fail} 台。\n"
@@ -211,7 +243,10 @@ def check_c7() -> tuple[bool, str]:
         )
     rows = rows_of(proc.stdout)
     if len(rows) != len(device_names()):
-        return False, f"python -m snmpcheck list 应列出 {len(device_names())} 台，实际 {len(rows)} 行"
+        return (
+            False,
+            f"python -m snmpcheck list 应列出 {len(device_names())} 台，实际 {len(rows)} 行",
+        )
     return True, "python -m snmpcheck list 也能跑（D19 打包前的预习）"
 
 
@@ -263,7 +298,9 @@ def main() -> int:
     if required_failed:
         print("结论：还没到 7/7。建议顺序：C3/C4（先把解析器搭对）→ C1 → C2 → C5 → C6。")
     else:
-        print("结论：全绿。snmpcheck 成型了 —— 这是 21 天训练第 1 周的收官，也是你第一个能写进简历的东西。")
+        print(
+            "结论：全绿。snmpcheck 成型了 —— 这是 21 天训练第 1 周的收官，也是你第一个能写进简历的东西。"
+        )
     return 0 if required_failed == 0 else 1
 
 

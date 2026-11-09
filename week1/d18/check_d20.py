@@ -56,26 +56,41 @@ def tail(text: str, n: int = 900) -> str:
 
 def device(host: str, port: int, verdict: str) -> dict:
     return {
-        "host": host, "port": port, "verdict": verdict,
-        "exit_code": EXIT_OF[verdict], "uptime_ticks": 12345678,
+        "host": host,
+        "port": port,
+        "verdict": verdict,
+        "exit_code": EXIT_OF[verdict],
+        "uptime_ticks": 12345678,
         "values": {"ifTable": 3, "sysName": "fake"},
         "failures": []
-        if verdict == "OK" else [{"stage": "sysDescr", "kind": "timeout", "detail": "假失败", "hint": "检查链路"}],
+        if verdict == "OK"
+        else [{"stage": "sysDescr", "kind": "timeout", "detail": "假失败", "hint": "检查链路"}],
     }
 
 
 def summarize(devices: list[dict]) -> dict:
     verdicts = [d["verdict"] for d in devices]
     worst = "FAILED" if "FAILED" in verdicts else ("DEGRADED" if "DEGRADED" in verdicts else "OK")
-    return {"total": len(devices), "ok": verdicts.count("OK"),
-            "degraded": verdicts.count("DEGRADED"), "failed": verdicts.count("FAILED"),
-            "exit_code": EXIT_OF[worst]}
+    return {
+        "total": len(devices),
+        "ok": verdicts.count("OK"),
+        "degraded": verdicts.count("DEGRADED"),
+        "failed": verdicts.count("FAILED"),
+        "exit_code": EXIT_OF[worst],
+    }
 
 
-def write_report(directory: Path, seq: int, devices: list[dict], *, minutes_ago: float = 0.0) -> Path:
+def write_report(
+    directory: Path, seq: int, devices: list[dict], *, minutes_ago: float = 0.0
+) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     stamp = (datetime.now() - timedelta(minutes=minutes_ago)).isoformat(timespec="seconds")
-    payload = {"schema": 1, "generated_at": stamp, "summary": summarize(devices), "devices": devices}
+    payload = {
+        "schema": 1,
+        "generated_at": stamp,
+        "summary": summarize(devices),
+        "devices": devices,
+    }
     path = directory / f"scan_{seq:06d}.json"
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
@@ -83,8 +98,12 @@ def write_report(directory: Path, seq: int, devices: list[dict], *, minutes_ago:
 
 def write_groups(base: Path, mapping: dict[str, list[str]]) -> Path:
     path = base / "groups.json"
-    path.write_text(json.dumps({"groups": [{"name": n, "members": m} for n, m in mapping.items()]},
-                               ensure_ascii=False), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {"groups": [{"name": n, "members": m} for n, m in mapping.items()]}, ensure_ascii=False
+        ),
+        encoding="utf-8",
+    )
     return path
 
 
@@ -101,7 +120,9 @@ def read_state(path: Path) -> dict:
 def read_log(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def rewind_since(state_path: Path, label: str, minutes_ago: float) -> None:
@@ -116,12 +137,30 @@ def rewind_since(state_path: Path, label: str, minutes_ago: float) -> None:
     state_path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
 
 
-def run_alert(report_dir, state_path, log_path, *extra, timeout: float = 90) -> subprocess.CompletedProcess[str]:
+def run_alert(
+    report_dir, state_path, log_path, *extra, timeout: float = 90
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [interpreter(), str(ALERT), "--report-dir", str(report_dir),
-         "--state", str(state_path), "--log", str(log_path), "--channel", "file", *extra],
-        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", env=make_env(), timeout=timeout,
+        [
+            interpreter(),
+            str(ALERT),
+            "--report-dir",
+            str(report_dir),
+            "--state",
+            str(state_path),
+            "--log",
+            str(log_path),
+            "--channel",
+            "file",
+            *extra,
+        ],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=make_env(),
+        timeout=timeout,
     )
 
 
@@ -147,8 +186,11 @@ def check_single_still_individual() -> tuple[bool, str]:
 # ---------------------------------------------------------------- C2
 def check_three_ungrouped_digest() -> tuple[bool, str]:
     report_dir, state_path, log_path = paths("c2")
-    devs = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"),
-            device("10.0.0.9", 163, "FAILED")]
+    devs = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     base = "http://127.0.0.1:8731"
@@ -171,8 +213,11 @@ def check_three_ungrouped_digest() -> tuple[bool, str]:
 # ---------------------------------------------------------------- C3
 def check_digest_items_have_links() -> tuple[bool, str]:
     report_dir, state_path, log_path = paths("c3")
-    devs = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"),
-            device("10.0.0.9", 163, "FAILED")]
+    devs = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     base = "http://127.0.0.1:8731"
@@ -195,8 +240,11 @@ def check_digest_items_have_links() -> tuple[bool, str]:
 # ---------------------------------------------------------------- C4
 def check_escalation_digest() -> tuple[bool, str]:
     report_dir, state_path, log_path = paths("c4")
-    devs = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"),
-            device("10.0.0.9", 163, "FAILED")]
+    devs = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     run_alert(report_dir, state_path, log_path)  # 先 open，since=now
@@ -228,16 +276,28 @@ def check_escalation_digest() -> tuple[bool, str]:
 def check_group_and_digest_coexist() -> tuple[bool, str]:
     report_dir, state_path, log_path = paths("c5")
     # 机房A 3 台 + 2 台散装（不在任何组）
-    grouped = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"),
-               device("10.0.0.9", 163, "FAILED")]
+    grouped = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     loose = [device("10.0.0.40", 161, "FAILED"), device("10.0.0.40", 162, "FAILED")]
     devs = grouped + loose
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     gpath = write_groups(TMP / "c5", {"机房A": ["10.0.0.9:161", "10.0.0.9:162", "10.0.0.9:163"]})
     base = "http://127.0.0.1:8731"
-    run_alert(report_dir, state_path, log_path, "--groups", str(gpath),
-              "--ack-base-url", base, "--escalate-channel", "file")
+    run_alert(
+        report_dir,
+        state_path,
+        log_path,
+        "--groups",
+        str(gpath),
+        "--ack-base-url",
+        base,
+        "--escalate-channel",
+        "file",
+    )
     log = read_log(log_path)
     group_alerts = [e for e in log if e.get("kind") == "group_alert"]
     digests = [e for e in log if e.get("kind") == "alert_digest"]
@@ -279,8 +339,11 @@ def check_threshold_control() -> tuple[bool, str]:
 # ---------------------------------------------------------------- C7
 def check_no_digest_flag() -> tuple[bool, str]:
     report_dir, state_path, log_path = paths("c7")
-    devs = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"),
-            device("10.0.0.9", 163, "FAILED")]
+    devs = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     run_alert(report_dir, state_path, log_path, "--no-digest")
@@ -302,12 +365,19 @@ def check_regression() -> tuple[bool, str]:
     problems = []
     for label, script in (("D19", CHECK_D19), ("D18", CHECK_D18), ("D17", CHECK_D17)):
         proc = subprocess.run(
-            [interpreter(), str(script)], cwd=str(ROOT),
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            env=make_env(), timeout=300,
+            [interpreter(), str(script)],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=make_env(),
+            timeout=300,
         )
         if proc.returncode != 0:
-            problems.append(f"{label} 回归挂了 rc={proc.returncode}\n" + tail(proc.stdout + proc.stderr))
+            problems.append(
+                f"{label} 回归挂了 rc={proc.returncode}\n" + tail(proc.stdout + proc.stderr)
+            )
     if problems:
         return False, "；".join(problems)
     return True, "D19 仍 8/8，D18 仍 8/8，D17 仍 9/9"
@@ -330,9 +400,18 @@ def main() -> int:
     print("D20 验收：通知聚合（digest）")
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
-    missing = [n for n in ("alert.py", "alerts.py", "notify.py", "check_d19.py",
-                            "check_d18.py", "check_d17.py")
-               if not (ROOT / n).exists()]
+    missing = [
+        n
+        for n in (
+            "alert.py",
+            "alerts.py",
+            "notify.py",
+            "check_d19.py",
+            "check_d18.py",
+            "check_d17.py",
+        )
+        if not (ROOT / n).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1

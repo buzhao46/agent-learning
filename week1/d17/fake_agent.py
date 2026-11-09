@@ -86,6 +86,7 @@ def interfaces() -> list[tuple[int, str, int, int, int]]:
         return [(i, f"GE0/0/{i}", 6, 1, 1000 * i) for i in range(1, 51)]
     return BASE_INTERFACES
 
+
 TAG_INT = 0x02
 TAG_OCTETS = 0x04
 TAG_NULL = 0x05
@@ -211,9 +212,13 @@ def mib() -> list[tuple[tuple[int, ...], str, bytes]]:
 
     # 后面两张表是「诱饵」：如果 WALK 不限制在 ifDescr 的子树里，
     # 就会一路走进来，结果里凭空多出一堆 IP 地址。
-    rows.append(("1.3.6.1.2.1.4.20.1.1.10.20.30.1", _encode_tlv(TAG_IPADDR, bytes([10, 20, 30, 1]))))
+    rows.append(
+        ("1.3.6.1.2.1.4.20.1.1.10.20.30.1", _encode_tlv(TAG_IPADDR, bytes([10, 20, 30, 1])))
+    )
     rows.append(("1.3.6.1.2.1.4.20.1.2.10.20.30.1", _encode_int(1)))
-    rows.append(("1.3.6.1.2.1.4.20.1.1.192.168.1.1", _encode_tlv(TAG_IPADDR, bytes([192, 168, 1, 1]))))
+    rows.append(
+        ("1.3.6.1.2.1.4.20.1.1.192.168.1.1", _encode_tlv(TAG_IPADDR, bytes([192, 168, 1, 1])))
+    )
     rows.append(("1.3.6.1.2.1.4.20.1.2.192.168.1.1", _encode_int(2)))
 
     table = [(tuple(int(x) for x in oid.split(".")), oid, tlv) for oid, tlv in rows]
@@ -342,15 +347,11 @@ def build_response(request: bytes) -> bytes:
     status = _fault_status(oids, pdu_tag)
     if status:
         nulls = b"".join(
-            _encode_tlv(TAG_SEQ, _encode_oid(oid) + _encode_tlv(TAG_NULL, b""))
-            for oid, _ in oids
+            _encode_tlv(TAG_SEQ, _encode_oid(oid) + _encode_tlv(TAG_NULL, b"")) for oid, _ in oids
         )
         pdu = _encode_tlv(
             TAG_GET_RESPONSE,
-            msg["reqid_raw"]
-            + _encode_int(status)
-            + _encode_int(1)
-            + _encode_tlv(TAG_SEQ, nulls),
+            msg["reqid_raw"] + _encode_int(status) + _encode_int(1) + _encode_tlv(TAG_SEQ, nulls),
         )
         return _encode_tlv(TAG_SEQ, msg["version_raw"] + msg["community_raw"] + pdu)
 
@@ -372,9 +373,7 @@ def build_response(request: bytes) -> bytes:
     if LOOP_BUG and pdu_tag != TAG_GET_REQUEST:
         last = interfaces()[-1][0]
         stuck = f"{OID_IF_DESCR}.{last}"
-        varbinds = [
-            _encode_tlv(TAG_SEQ, _encode_oid(stuck) + _encode_tlv(TAG_OCTETS, b"LOOP-BUG"))
-        ]
+        varbinds = [_encode_tlv(TAG_SEQ, _encode_oid(stuck) + _encode_tlv(TAG_OCTETS, b"LOOP-BUG"))]
 
     pdu = _encode_tlv(
         TAG_GET_RESPONSE,
@@ -390,8 +389,13 @@ def serve(host: str, port: int, community: str) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((host, port))
     print(f"假设备已启动：{host}:{port}  name={NAME}  community={community}", flush=True)
-    print(f"接口数 {len(interfaces())}  miss_status={MISS_STATUS}  loop_bug={LOOP_BUG}  many={MANY_PORTS}", flush=True)
-    print(f"故障开关  too_big={TOO_BIG}  gen_err={GEN_ERR}  no_such_name={NO_SUCH_NAME}", flush=True)
+    print(
+        f"接口数 {len(interfaces())}  miss_status={MISS_STATUS}  loop_bug={LOOP_BUG}  many={MANY_PORTS}",
+        flush=True,
+    )
+    print(
+        f"故障开关  too_big={TOO_BIG}  gen_err={GEN_ERR}  no_such_name={NO_SUCH_NAME}", flush=True
+    )
     print("Ctrl+C 停止。保持这个窗口开着，另开一个窗口跑你的代码。", flush=True)
     while True:
         data, peer = sock.recvfrom(8192)
@@ -408,12 +412,16 @@ def serve(host: str, port: int, community: str) -> None:
 def main() -> int:
     global NAME, BAD_UPTIME, MISS_STATUS, LOOP_BUG, MANY_PORTS
     global TOO_BIG, GEN_ERR, NO_SUCH_NAME, UPTIME_TICKS
-    parser = argparse.ArgumentParser(description="最小 SNMPv2c 应答器（假设备，支持 WALK 和错误码）")
+    parser = argparse.ArgumentParser(
+        description="最小 SNMPv2c 应答器（假设备，支持 WALK 和错误码）"
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=1161)
     parser.add_argument("--community", default="public")
     parser.add_argument("--name", default=NAME)
-    parser.add_argument("--uptime", type=int, default=UPTIME_TICKS, help="sysUpTime ticks（1/100 秒），用于模拟重启")
+    parser.add_argument(
+        "--uptime", type=int, default=UPTIME_TICKS, help="sysUpTime ticks（1/100 秒），用于模拟重启"
+    )
     parser.add_argument("--uptime-bad", action="store_true", help="sysUpTime 回 N/A（脏值）")
     parser.add_argument("--miss-status", action="store_true", help="ifIndex=3 缺 ifOperStatus")
     parser.add_argument("--loop", action="store_true", help="GETNEXT 表末尾原地打转")

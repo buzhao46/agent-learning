@@ -10,6 +10,7 @@
     - Function Calling 的 parameters schema 本质就是类型声明，写错模型就传错参数
     - Pydantic 模型靠注解做校验，注解写松了脏数据就进系统
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

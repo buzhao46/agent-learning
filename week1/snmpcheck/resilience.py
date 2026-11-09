@@ -145,5 +145,7 @@ def retry_call(
             if i == attempts - 1:
                 break
             time.sleep(wait)
-            wait *=backoff
+            wait *= backoff
+    if last is None:
+        raise RuntimeError("retry_call 未执行任何尝试（attempts 应 >= 1）")
     raise last

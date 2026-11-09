@@ -9,6 +9,7 @@ SCHEMA_VERSION = 1
 _PRIORITY = {"OK": 0, "DEGRADED": 1, "FAILED": 2}
 _EXIT = {"OK": 0, "DEGRADED": 2, "FAILED": 1}
 
+
 def summarize(devices: list[dict]) -> dict:
     ok = sum(1 for d in devices if d["verdict"] == "OK")
     degraded = sum(1 for d in devices if d["verdict"] == "DEGRADED")
@@ -22,6 +23,7 @@ def summarize(devices: list[dict]) -> dict:
         "exit_code": _EXIT[worst],
     }
 
+
 def build_payload(devices: list[dict]) -> dict:
     return {
         "schema": SCHEMA_VERSION,
@@ -29,6 +31,7 @@ def build_payload(devices: list[dict]) -> dict:
         "summary": summarize(devices),
         "devices": devices,
     }
+
 
 def write_json_atomic(path: Path, payload: dict) -> Path:
     """先写 .tmp 再 os.replace —— 产物永远完整，不会出现半截 JSON。"""

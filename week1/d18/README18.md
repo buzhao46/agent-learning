@@ -99,20 +99,31 @@ cd d18
 新增一个**独立的纯函数** `maybe_escalate`，不塞进 `step`：
 
 ```python
-def maybe_escalate(prev: dict, *, escalate_after: int, max_level: int, now: datetime
-                    ) -> tuple[dict, Event | None]:
+def maybe_escalate(
+    prev: dict, *, escalate_after: int, max_level: int, now: datetime
+) -> tuple[dict, Event | None]:
     """返回 (可能更新的状态, escalate 事件或 None)。纯函数，不读盘不发通知。"""
     if prev.get("status") != "ALERT" or prev.get("acknowledged"):
         return prev, None
     level = int(prev.get("escalation_level", 0))
     waited = (now - datetime.fromisoformat(prev["since"])).total_seconds() / 60
-    threshold = escalate_after * (2 ** level)   # 窗口翻倍：L0→等 escalate_after，L1→再等 2×，L2→再等 4×
+    threshold = escalate_after * (
+        2**level
+    )  # 窗口翻倍：L0→等 escalate_after，L1→再等 2×，L2→再等 4×
     if level < max_level and waited >= threshold:
-        new_state = {**prev, "escalation_level": level + 1,
-                     "last_escalated_at": now.isoformat(timespec="seconds")}
-        event = Event("alert_escalate", prev_label(prev), "ALERT", "ALERT",
-                      f"未确认告警升级至 L{level + 1}（已等待 {waited:.0f} 分钟）",
-                      now.isoformat(timespec="seconds"))
+        new_state = {
+            **prev,
+            "escalation_level": level + 1,
+            "last_escalated_at": now.isoformat(timespec="seconds"),
+        }
+        event = Event(
+            "alert_escalate",
+            prev_label(prev),
+            "ALERT",
+            "ALERT",
+            f"未确认告警升级至 L{level + 1}（已等待 {waited:.0f} 分钟）",
+            now.isoformat(timespec="seconds"),
+        )
         return new_state, event
     return prev, None
 ```
@@ -136,7 +147,7 @@ python ack.py --state out/alert_state.json --group 机房A --by bob        # 批
 
 ```python
 state, _ = load_state(args.state, now=now)
-targets = resolve_targets(state, args)   # --device 单台，或 --group 展开成组内所有 label
+targets = resolve_targets(state, args)  # --device 单台，或 --group 展开成组内所有 label
 for label in targets:
     dev = state["devices"].get(label)
     if dev and dev.get("status") == "ALERT":
@@ -160,8 +171,9 @@ D17 `alert.py` 是五步：读状态 → 算趋势 → 补发 pending → 过状
 ```python
 # 3.5 升级扫描：对每台 ALERT 且未 ack 的设备，检查是否该升级
 for label, dev in state["devices"].items():
-    new_dev, event = maybe_escalate(dev, escalate_after=args.escalate_after,
-                                    max_level=args.max_level, now=now)
+    new_dev, event = maybe_escalate(
+        dev, escalate_after=args.escalate_after, max_level=args.max_level, now=now
+    )
     state["devices"][label] = new_dev
     if event is not None:
         escalation_events.append(event)
@@ -199,7 +211,7 @@ def correlate(events, state, groups, threshold):
     for ev in events:
         gname = label_to_group.get(ev.label)
         if gname and group_stats[gname][0] / group_stats[gname][1] >= threshold:
-            if ev.kind == "alert_open":          # 单设备 open 被收敛，不单独发
+            if ev.kind == "alert_open":  # 单设备 open 被收敛，不单独发
                 ev.suppressed = True
                 ev.reason = f"已收敛到组告警（{gname}）"
                 continue
@@ -213,12 +225,28 @@ def correlate(events, state, groups, threshold):
             if gstate["status"] != "ALERT":
                 gstate["status"] = "ALERT"
                 gstate["since"] = now.isoformat(timespec="seconds")
-                final_events.append(Event("group_alert", g["name"], "OK", "ALERT",
-                                  f"{g['name']}：{n_alert}/{n_total} 设备不可达，疑似上游故障", stamp))
+                final_events.append(
+                    Event(
+                        "group_alert",
+                        g["name"],
+                        "OK",
+                        "ALERT",
+                        f"{g['name']}：{n_alert}/{n_total} 设备不可达，疑似上游故障",
+                        stamp,
+                    )
+                )
         else:
             if gstate["status"] == "ALERT":
-                final_events.append(Event("group_alert", g["name"], "ALERT", "OK",
-                                  f"{g['name']} 故障恢复，剩 {n_alert}/{n_total} 台异常", stamp))
+                final_events.append(
+                    Event(
+                        "group_alert",
+                        g["name"],
+                        "ALERT",
+                        "OK",
+                        f"{g['name']} 故障恢复，剩 {n_alert}/{n_total} 台异常",
+                        stamp,
+                    )
+                )
             gstate["status"] = "OK"
     return final_events, state
 ```

@@ -51,18 +51,20 @@ week1/d18/
 查询函数：
 
 ```python
-def default_shift(now):            # 8–19 点算 day，其余 night
+def default_shift(now):  # 8–19 点算 day，其余 night
     return "day" if 8 <= now.hour < 20 else "night"
 
+
 def on_duty(path, now, shift=None):
-    rows = load_roster(path)       # 文件缺失/损坏 → 空列表，不崩
-    if not rows: return None
+    rows = load_roster(path)  # 文件缺失/损坏 → 空列表，不崩
+    if not rows:
+        return None
     shift = shift or default_shift(now)
     date = now.strftime("%Y-%m-%d")
     for row in rows:
         if row.get("date") == date and row.get("shift") == shift and row.get("person"):
             return str(row["person"])
-    return None                    # 今天没排班 → None（链接不带 by）
+    return None  # 今天没排班 → None（链接不带 by）
 ```
 
 `load_roster` 对「文件不存在 / 不是合法 JSON / 不是数组」一律返回空列表并打警告——排班表是运营配置，坏了不能让告警流程崩。

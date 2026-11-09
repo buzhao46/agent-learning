@@ -17,6 +17,7 @@
     curl -X POST http://127.0.0.1:8000/echo -H "Content-Type: application/json" -d "{\"message\":\"hello\"}"
     curl http://127.0.0.1:8000/devices/core-sw-01
 """
+
 from __future__ import annotations
 
 from functools import lru_cache
@@ -97,7 +98,9 @@ def echo(body: EchoIn) -> EchoOut:
 
 @app.get("/devices", dependencies=[Depends(require_token)])
 def list_devices(settings: SettingsDep) -> dict[str, object]:
-    abnormal = [d for d in DEVICES.values() if d["status"] != "up" or int(d["cpu"]) >= settings.cpu_warn]
+    abnormal = [
+        d for d in DEVICES.values() if d["status"] != "up" or int(d["cpu"]) >= settings.cpu_warn
+    ]
     return {"total": len(DEVICES), "abnormal": abnormal}
 
 

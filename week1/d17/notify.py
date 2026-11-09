@@ -29,7 +29,9 @@ def send(
 ) -> tuple[bool, str]:
     """发一条事件，返回 (成功?, 说明)。失败只返回，不抛。"""
     if channel == "console":
-        print(f"[通知] {event.get('kind', '?'):<11} {event.get('device', '?'):<20} {event.get('reason', '')}")
+        print(
+            f"[通知] {event.get('kind', '?'):<11} {event.get('device', '?'):<20} {event.get('reason', '')}"
+        )
         return True, "console"
 
     if channel == "file":

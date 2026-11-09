@@ -1,4 +1,5 @@
-"""D15 """
+"""D15"""
+
 from __future__ import annotations
 
 import argparse
@@ -25,6 +26,7 @@ warnings.filterwarnings("ignore", category=ResourceWarning)
 if sys.platform == "win32" and hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+from ifwalk import OID_IF_DESCR, walk
 from pysnmp.hlapi import (
     CommunityData,
     ContextData,
@@ -35,9 +37,6 @@ from pysnmp.hlapi import (
     getCmd,
 )
 from pysnmp.proto import errind, rfc1905
-from pysnmp.proto.rfc1902 import OctetString
-
-from ifwalk import OID_IF_DESCR, walk
 from snmpio import ProbeError, fmt_ticks
 
 OID_SYSDESCR = "1.3.6.1.2.1.1.1.0"
@@ -195,8 +194,8 @@ def classify(
         if isinstance(indication, errind.EmptyResponse):
             return ErrorKind.PROTOCOL
         return ErrorKind.UNREACHABLE
-    if status is not None and int(status) != 0:
-        code = int(status)
+    if isinstance(status, int) and status != 0:
+        code = status
         if code == 1:
             return ErrorKind.TOO_BIG
         if code == 2:
@@ -267,7 +266,7 @@ def get_raw(
     )
     value = var_binds[0][1] if var_binds else None
     kind = classify(indication, status, value)
-    
+
     if kind is not None:
         if indication is not None:
             detail = str(indication)
@@ -340,16 +339,12 @@ def collect_device(
         if failure is None:
             result.values[stage] = text
         else:
-            result.failures.append(
-                Failure(stage=stage, kind=failure.kind, detail=failure.detail)
-            )
+            result.failures.append(Failure(stage=stage, kind=failure.kind, detail=failure.detail))
     try:
         rows = walk(host, OID_IF_DESCR, community=community, port=port, timeout=timeout)
         result.values["ifTable"] = len(rows)
     except ProbeError as exc:
-        result.failures.append(
-            Failure(stage="ifTable", kind=ErrorKind.PROTOCOL, detail=str(exc))
-        )
+        result.failures.append(Failure(stage="ifTable", kind=ErrorKind.PROTOCOL, detail=str(exc)))
 
     return result
 
@@ -430,7 +425,9 @@ def _dev_key(dev: dict) -> tuple[str, int]:
     return (str(dev.get("host", "")), port)
 
 
-def scan_config(path: str, *, workers: int = 16, report_dir: str = "out", incremental: bool = False) -> int:
+def scan_config(
+    path: str, *, workers: int = 16, report_dir: str = "out", incremental: bool = False
+) -> int:
     devices = load_devices(path)
     last = None
     if incremental:
@@ -455,14 +452,14 @@ def scan_config(path: str, *, workers: int = 16, report_dir: str = "out", increm
         raw = r.values.get("uptime")
         if raw is not None:
             try:
-                r.uptime_ticks = int(raw)          # 先留原始 ticks，落盘给趋势分析用
+                r.uptime_ticks = int(raw)  # 先留原始 ticks，落盘给趋势分析用
                 r.values["uptime"] = fmt_ticks(r.uptime_ticks)
             except (TypeError, ValueError):
                 pass
         render(r)
 
     new_devices = []
-    for dev, r in zip(devices, results):
+    for dev, r in zip(devices, results, strict=False):
         item = result_to_dict(r)
         item["port"] = _dev_key(dev)[1]  # 落盘带端口，下次增量才能按 (host, port) 对上号
         new_devices.append(item)
@@ -478,9 +475,12 @@ def scan_config(path: str, *, workers: int = 16, report_dir: str = "out", increm
     payload = build_payload(devices_payload)
     report_path = save_report(payload, report_dir)
     s = payload["summary"]
-    print(f"\n汇总：{s['total']} 台 → OK {s['ok']} / DEGRADED {s['degraded']} / FAILED {s['failed']}，退出码 {s['exit_code']}")
+    print(
+        f"\n汇总：{s['total']} 台 → OK {s['ok']} / DEGRADED {s['degraded']} / FAILED {s['failed']}，退出码 {s['exit_code']}"
+    )
     print(f"报告已写入 {report_path}")
     return s["exit_code"]
+
 
 def _json_value(value):
     """把 pysnmp 的 ASN.1 值对象（OctetString / TimeTicks …）转成 JSON 能写的基本类型。
@@ -524,6 +524,7 @@ def result_to_dict(result: CollectionResult) -> dict:
             for f in result.failures
         ],
     }
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="采一台或多台设备并给出错误分类")

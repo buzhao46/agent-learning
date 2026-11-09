@@ -12,6 +12,7 @@
     llm = LLMClient()
     print(llm.chat([{"role": "user", "content": "你好"}]))
 """
+
 from __future__ import annotations
 
 import os
@@ -83,9 +84,7 @@ class LLMClient:
         return self._sdk
 
     def _mock(self, messages: list[dict[str, str]], **kw: Any) -> str:
-        last_user = next(
-            (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
-        )
+        last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
         return (
             f"[mock] 未配置 LLM_API_KEY，这是模拟回复。\n"
             f"收到 {len(messages)} 条消息，最后一条用户输入：{last_user[:40]}\n"

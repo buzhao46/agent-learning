@@ -38,8 +38,11 @@ def send(
                 if kind == "escalate_digest":
                     extra = f"  级别L{item.get('level')} 等待{item.get('waited_minutes')}分钟"
                 ack = item.get("ack_url")
-                print(f"    - {item.get('device', '?'):<22}{extra}  确认：{ack}" if ack
-                      else f"    - {item.get('device', '?'):<22}{extra}")
+                print(
+                    f"    - {item.get('device', '?'):<22}{extra}  确认：{ack}"
+                    if ack
+                    else f"    - {item.get('device', '?'):<22}{extra}"
+                )
             return True, "console"
         print(f"[通知] {kind:<11} {event.get('device', '?'):<20} {event.get('reason', '')}")
         ack_url = event.get("ack_url")

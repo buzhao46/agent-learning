@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snmp-insight"
+version = "0.1.0"
+description = "SNMP 网络巡检 + 告警闭环运维 Agent 原型（pysnmp 真采集 / 告警状态机 / 签名确认闭环）"
+readme = "RESUME_21days.md"
+requires-python = ">=3.10"
+dependencies = ["pysnmp>=6.1"]
+
+[project.scripts]
+snmpcheck = "snmpcheck.snmpcheck:main"
+
+[tool.setuptools]
+packages = ["snmpcheck"]
+
+[tool.setuptools.package-data]
+snmpcheck = ["*.json", "*.md"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+exclude = [
+    ".venv",
+    ".mypy_cache",
+    ".ruff_cache",
+    "__pycache__",
+    "out",
+    "d1", "d2", "d3", "d4", "d5", "d6", "d7",
+    "d8", "d9", "d10", "d11", "d12", "d13", "d14", "d15", "d16",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# pysnmp 导入必须排在 Windows 事件循环策略设置之后，刻意不置顶
+"d17/probe.py" = ["E402"]
+"d18/probe.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+warn_unused_ignores = false
+warn_redundant_casts = false
+disable_error_code = ["import-untyped"]
+exclude = [
+    "(?:^|/)d[1-9](?:/|$)",
+    "(?:^|/)d1[0-6](?:/|$)",
+    "check_.*\\.py$",
+    "fake_agent\\.py$",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["snmpcheck", "d17", "d18"]
+omit = ["*/check_*.py", "*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true

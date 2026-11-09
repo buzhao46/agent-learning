@@ -118,7 +118,7 @@ trend.last_seen = items[-1][0] or None
 try:
     data = json.loads(file.read_text(encoding="utf-8-sig"))
 except (OSError, json.JSONDecodeError) as exc:
-    backup = _backup(file)          # alert_state.bad-<时间戳>.json
+    backup = _backup(file)  # alert_state.bad-<时间戳>.json
     return empty_state(now), f"状态文件损坏，已备份为 {backup.name}：{exc}"
 ```
 
@@ -194,8 +194,9 @@ def is_silenced(label, now, silences) -> tuple[bool, str]:
 ## 六、TODO 4：`notify.py` —— 渠道抽象
 
 ```python
-def send(event, *, channel="console", webhook=None, log_path="out/alerts.log",
-         timeout=3.0) -> tuple[bool, str]:
+def send(
+    event, *, channel="console", webhook=None, log_path="out/alerts.log", timeout=3.0
+) -> tuple[bool, str]:
     """发一条事件。失败只返回，不抛 —— 状态机不能因为网络抖动崩。"""
 ```
 

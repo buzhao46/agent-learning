@@ -77,6 +77,7 @@ def ack_url_for(kind, label, args):
         return acktoken.group_ack_url(args.ack_base_url, label, args.ack_secret)
     return acktoken.device_ack_url(args.ack_base_url, label, args.ack_secret)
 
+
 # 新事件循环里：
 payload = event.to_dict()
 url = ack_url_for(event.kind, event.label, args)
@@ -100,6 +101,7 @@ D18 的 `ack.py` 把「解析目标 + 写确认 + 存盘」全写在 `main` 里�
 ```python
 def resolve_targets(state, groups_path, device, group) -> set[str]:
     """--device 单台，或 --group 展开成组内所有 label。"""
+
 
 def apply_ack(state, targets, by, note, now) -> int:
     """对 targets 里仍是 ALERT 的设备写 acknowledged，返回确认了几台。直接改 state。"""

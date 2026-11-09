@@ -15,6 +15,7 @@
     python day4_llm_call.py --once "解释一下 SNMP 的 OID"
     python day4_llm_call.py                       # 不带参数 = 多轮对话，输入 exit 退出
 """
+
 from __future__ import annotations
 
 import argparse
@@ -72,7 +73,9 @@ def main() -> None:
         if args.show_payload:
             print("→ 发送消息数：", len(build_messages(history)))
 
-        reply = llm.chat(build_messages(history), temperature=0.3, max_tokens=600, stream=args.stream)
+        reply = llm.chat(
+            build_messages(history), temperature=0.3, max_tokens=600, stream=args.stream
+        )
         if not args.stream:
             print(f"AI > {reply}\n")
         else:

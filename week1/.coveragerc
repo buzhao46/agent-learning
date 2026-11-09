@@ -1,0 +1,12 @@
+[run]
+parallel = true
+source =
+    F:/workbuddy_workspace/2026-10-19-10-49-35/week1
+omit =
+    */check_*.py
+    */__init__.py
+    */fake_agent.py
+    */out/*
+
+[report]
+show_missing = true

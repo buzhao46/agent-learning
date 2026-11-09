@@ -132,7 +132,9 @@ def main() -> int:
         print(f"{args.report_dir} 下没有报告，也没有历史状态，无事可做")
         return 0
 
-    print(f"趋势：{len(trends)} 台；状态文件：{len(state.get('devices', {}))} 台；待发 {len(state.get('pending', []))} 条")
+    print(
+        f"趋势：{len(trends)} 台；状态文件：{len(state.get('devices', {}))} 台；待发 {len(state.get('pending', []))} 条"
+    )
 
     observations = collect_observations(trends, state)
     new_events = []
@@ -149,7 +151,9 @@ def main() -> int:
         old_status = (prev or {}).get("status", "-")
         marks = ", ".join(event.kind for event in events) or "-"
         stale_mark = " (stale)" if new_state.get("stale") else ""
-        print(f"  {obs.label:<22} {old_status:<8} → {new_state['status']:<8}{stale_mark:<8} {marks}")
+        print(
+            f"  {obs.label:<22} {old_status:<8} → {new_state['status']:<8}{stale_mark:<8} {marks}"
+        )
         new_events.extend(events)
 
     if args.dry_run:

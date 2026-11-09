@@ -34,7 +34,7 @@ class Observation:
     """状态机的输入：一台设备本次的结论（由 history.Trend 映射而来）。"""
 
     label: str
-    verdict: str          # "ALERT" / "OK" / "UNKNOWN"
+    verdict: str  # "ALERT" / "OK" / "UNKNOWN"
     consecutive_bad: int = 0
     consecutive_ok: int = 0
     last_seen: str | None = None
@@ -158,9 +158,7 @@ def step(
             state["status"] = ST_ALERT
             state["since"] = stamp
             state["last_notified_at"] = stamp
-            events.append(
-                Event(EVENT_OPEN, obs.label, old, ST_ALERT, _alert_reason(obs), stamp)
-            )
+            events.append(Event(EVENT_OPEN, obs.label, old, ST_ALERT, _alert_reason(obs), stamp))
         # 已经是 ALERT：只更新计数，不产生事件 —— 今天所有降噪都靠这一条
     elif obs.verdict == "OK":
         if old == ST_ALERT:

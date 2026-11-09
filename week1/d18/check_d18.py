@@ -52,46 +52,83 @@ def tail(text: str, n: int = 900) -> str:
     return "\n".join(body.splitlines()[-14:])[:n] if body else "(空)"
 
 
-def run_alert(report_dir, state_path, log_path, *extra, timeout: float = 90) -> subprocess.CompletedProcess[str]:
+def run_alert(
+    report_dir, state_path, log_path, *extra, timeout: float = 90
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [interpreter(), str(ALERT), "--report-dir", str(report_dir),
-         "--state", str(state_path), "--log", str(log_path), "--channel", "file", *extra],
-        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", env=make_env(), timeout=timeout,
+        [
+            interpreter(),
+            str(ALERT),
+            "--report-dir",
+            str(report_dir),
+            "--state",
+            str(state_path),
+            "--log",
+            str(log_path),
+            "--channel",
+            "file",
+            *extra,
+        ],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=make_env(),
+        timeout=timeout,
     )
 
 
 def run_ack(state_path, *extra, timeout: float = 60) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [interpreter(), str(ACK), "--state", str(state_path), *extra],
-        cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8",
-        errors="replace", env=make_env(), timeout=timeout,
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=make_env(),
+        timeout=timeout,
     )
 
 
 def device(host: str, port: int, verdict: str) -> dict:
     return {
-        "host": host, "port": port, "verdict": verdict,
+        "host": host,
+        "port": port,
+        "verdict": verdict,
         "exit_code": EXIT_OF[verdict],
         "uptime_ticks": 12345678,
         "values": {"ifTable": 3, "sysName": "fake"},
         "failures": []
-        if verdict == "OK" else [{"stage": "sysDescr", "kind": "timeout", "detail": "假失败", "hint": "检查链路"}],
+        if verdict == "OK"
+        else [{"stage": "sysDescr", "kind": "timeout", "detail": "假失败", "hint": "检查链路"}],
     }
 
 
 def summarize(devices: list[dict]) -> dict:
     verdicts = [d["verdict"] for d in devices]
     worst = "FAILED" if "FAILED" in verdicts else ("DEGRADED" if "DEGRADED" in verdicts else "OK")
-    return {"total": len(devices), "ok": verdicts.count("OK"),
-            "degraded": verdicts.count("DEGRADED"), "failed": verdicts.count("FAILED"),
-            "exit_code": EXIT_OF[worst]}
+    return {
+        "total": len(devices),
+        "ok": verdicts.count("OK"),
+        "degraded": verdicts.count("DEGRADED"),
+        "failed": verdicts.count("FAILED"),
+        "exit_code": EXIT_OF[worst],
+    }
 
 
-def write_report(directory: Path, seq: int, devices: list[dict], *, minutes_ago: float = 0.0) -> Path:
+def write_report(
+    directory: Path, seq: int, devices: list[dict], *, minutes_ago: float = 0.0
+) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     stamp = (datetime.now() - timedelta(minutes=minutes_ago)).isoformat(timespec="seconds")
-    payload = {"schema": 1, "generated_at": stamp, "summary": summarize(devices), "devices": devices}
+    payload = {
+        "schema": 1,
+        "generated_at": stamp,
+        "summary": summarize(devices),
+        "devices": devices,
+    }
     path = directory / f"scan_{seq:06d}.json"
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
@@ -99,8 +136,12 @@ def write_report(directory: Path, seq: int, devices: list[dict], *, minutes_ago:
 
 def write_groups(base: Path, mapping: dict[str, list[str]]) -> Path:
     path = base / "groups.json"
-    path.write_text(json.dumps({"groups": [{"name": n, "members": m} for n, m in mapping.items()]},
-                               ensure_ascii=False), encoding="utf-8")
+    path.write_text(
+        json.dumps(
+            {"groups": [{"name": n, "members": m} for n, m in mapping.items()]}, ensure_ascii=False
+        ),
+        encoding="utf-8",
+    )
     return path
 
 
@@ -135,7 +176,9 @@ def rewind_since(state_path: Path, label: str, minutes_ago: float) -> None:
 def read_log(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def seed(report_dir, state_path, log_path, devices, agos=(3.0, 2.0, 1.0), extra=()):
@@ -150,10 +193,10 @@ def check_ack_blocks_escalation() -> tuple[bool, str]:
     for seq, ago in enumerate((60.0, 59.0, 58.0), start=1):
         write_report(report_dir, seq, [device("10.0.0.40", 161, "FAILED")], minutes_ago=ago)
 
-    run_alert(report_dir, state_path, log_path)            # 先 open，since=now
-    rewind_since(state_path, "10.0.0.40:161", 60)         # 模拟已开 60 分钟
+    run_alert(report_dir, state_path, log_path)  # 先 open，since=now
+    rewind_since(state_path, "10.0.0.40:161", 60)  # 模拟已开 60 分钟
 
-    p1 = run_alert(report_dir, state_path, log_path, "--escalate-channel", "file")
+    run_alert(report_dir, state_path, log_path, "--escalate-channel", "file")
     esc1 = [e for e in read_log(log_path) if e.get("kind") == "alert_escalate"]
     problems = []
     if len(esc1) != 1:
@@ -184,7 +227,7 @@ def check_escalate_once() -> tuple[bool, str]:
     run_alert(report_dir, state_path, log_path)
     rewind_since(state_path, "10.0.0.40:161", 40)
 
-    p1 = run_alert(report_dir, state_path, log_path, "--escalate-channel", "file")
+    run_alert(report_dir, state_path, log_path, "--escalate-channel", "file")
     esc1 = [e for e in read_log(log_path) if e.get("kind") == "alert_escalate"]
     state1 = read_state(state_path)
     problems = []
@@ -206,12 +249,18 @@ def check_escalate_once() -> tuple[bool, str]:
 def check_correlation() -> tuple[bool, str]:
     name = "c3"
     report_dir, state_path, log_path = paths(name)
-    devs = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"), device("10.0.0.9", 163, "FAILED")]
+    devs = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     gpath = write_groups(TMP / name, {"机房A": ["10.0.0.9:161", "10.0.0.9:162", "10.0.0.9:163"]})
 
-    p = run_alert(report_dir, state_path, log_path, "--groups", str(gpath), "--escalate-channel", "file")
+    p = run_alert(
+        report_dir, state_path, log_path, "--groups", str(gpath), "--escalate-channel", "file"
+    )
     log = read_log(log_path)
     opens = [e for e in log if e.get("kind") == "alert_open"]
     groups = [e for e in log if e.get("kind") == "group_alert"]
@@ -235,18 +284,33 @@ def check_correlation() -> tuple[bool, str]:
 def check_group_recovery() -> tuple[bool, str]:
     name = "c4"
     report_dir, state_path, log_path = paths(name)
-    devs = [device("10.0.0.9", 161, "FAILED"), device("10.0.0.9", 162, "FAILED"), device("10.0.0.9", 163, "FAILED")]
+    devs = [
+        device("10.0.0.9", 161, "FAILED"),
+        device("10.0.0.9", 162, "FAILED"),
+        device("10.0.0.9", 163, "FAILED"),
+    ]
     for seq, ago in enumerate((3.0, 2.0, 1.0), start=1):
         write_report(report_dir, seq, devs, minutes_ago=ago)
     gpath = write_groups(TMP / name, {"机房A": ["10.0.0.9:161", "10.0.0.9:162", "10.0.0.9:163"]})
 
-    run_alert(report_dir, state_path, log_path, "--groups", str(gpath), "--escalate-channel", "file")  # c3 现场
+    run_alert(
+        report_dir, state_path, log_path, "--groups", str(gpath), "--escalate-channel", "file"
+    )  # c3 现场
     # 追加两份 A,B 恢复、C 仍坏的报告 → A,B 连续 2 次 OK 消警，C 仍 ALERT，组低于阈值
     for seq in (4, 5):
-        write_report(report_dir, seq,
-                     [device("10.0.0.9", 161, "OK"), device("10.0.0.9", 162, "OK"), device("10.0.0.9", 163, "FAILED")],
-                     minutes_ago=0)
-    p = run_alert(report_dir, state_path, log_path, "--groups", str(gpath), "--escalate-channel", "file")
+        write_report(
+            report_dir,
+            seq,
+            [
+                device("10.0.0.9", 161, "OK"),
+                device("10.0.0.9", 162, "OK"),
+                device("10.0.0.9", 163, "FAILED"),
+            ],
+            minutes_ago=0,
+        )
+    p = run_alert(
+        report_dir, state_path, log_path, "--groups", str(gpath), "--escalate-channel", "file"
+    )
 
     log = read_log(log_path)
     rec = [e for e in log if e.get("kind") == "group_alert" and e.get("new_status") == "OK"]
@@ -272,7 +336,17 @@ def check_escalate_cap() -> tuple[bool, str]:
     run_alert(report_dir, state_path, log_path)
     rewind_since(state_path, "10.0.0.40:161", 200)
     for _ in range(3):
-        run_alert(report_dir, state_path, log_path, "--max-level", "2", "--escalate-after", "30", "--escalate-channel", "file")
+        run_alert(
+            report_dir,
+            state_path,
+            log_path,
+            "--max-level",
+            "2",
+            "--escalate-after",
+            "30",
+            "--escalate-channel",
+            "file",
+        )
     log = read_log(log_path)
     esc = [e for e in log if e.get("kind") == "alert_escalate"]
     state = read_state(state_path)
@@ -318,9 +392,14 @@ def check_ack_cli() -> tuple[bool, str]:
 # ---------------------------------------------------------------- C8
 def check_d17_regression() -> tuple[bool, str]:
     proc = subprocess.run(
-        [interpreter(), str(CHECK_D17)], cwd=str(ROOT),
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
-        env=make_env(), timeout=180,
+        [interpreter(), str(CHECK_D17)],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=make_env(),
+        timeout=180,
     )
     if proc.returncode != 0:
         return False, f"D17 回归挂了 rc={proc.returncode}\n" + tail(proc.stdout + proc.stderr)
@@ -344,7 +423,11 @@ def main() -> int:
     print("D18 验收：告警收敛与升级")
     print("=" * 64)
     print(f"\n解释器：{interpreter()}")
-    missing = [n for n in ("alert.py", "alerts.py", "state.py", "notify.py", "ack.py") if not (ROOT / n).exists()]
+    missing = [
+        n
+        for n in ("alert.py", "alerts.py", "state.py", "notify.py", "ack.py")
+        if not (ROOT / n).exists()
+    ]
     if missing:
         print(f"准备：[!] 缺文件：{', '.join(missing)}")
         return 1

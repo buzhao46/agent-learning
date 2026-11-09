@@ -1,8 +1,16 @@
 """把 getCmd 返回的四元组原样打出来 —— 看 pysnmp 到底给了我们什么。"""
+
 import sys
 
-from pysnmp.hlapi import CommunityData, ContextData, ObjectIdentity, ObjectType
-from pysnmp.hlapi import SnmpEngine, UdpTransportTarget, getCmd
+from pysnmp.hlapi import (
+    CommunityData,
+    ContextData,
+    ObjectIdentity,
+    ObjectType,
+    SnmpEngine,
+    UdpTransportTarget,
+    getCmd,
+)
 
 host, port, oid = sys.argv[1], int(sys.argv[2]), sys.argv[3]
 community = sys.argv[4] if len(sys.argv) > 4 else "public"
